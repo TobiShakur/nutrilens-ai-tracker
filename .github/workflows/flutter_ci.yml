@@ -1,0 +1,37 @@
+name: NutriLens Flutter CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  analyze_and_test:
+    name: Lint, Test & Web Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Verify Code Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Static Code Analysis (Strict Linter)
+        run: flutter analyze --fatal-infos
+
+      - name: Execute Unit and ViewModel Tests
+        run: flutter test --coverage
+
+      - name: Build Web Release (Smoke Test)
+        run: flutter build web --release
