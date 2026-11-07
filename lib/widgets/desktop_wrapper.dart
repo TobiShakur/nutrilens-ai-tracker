@@ -18,9 +18,9 @@ class DesktopWrapper extends StatelessWidget {
 
         if (isMobileViewport) {
           return Material(
-            color: AppColors.scaffoldBg,
+            type: MaterialType.transparency,
             textStyle: AppTextStyles.body(),
-            child: SizedBox.expand(child: child),
+            child: child,
           );
         }
 

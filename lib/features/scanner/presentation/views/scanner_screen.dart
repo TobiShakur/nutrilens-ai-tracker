@@ -456,7 +456,7 @@ class _ScannerScreenState extends State<ScannerScreen>
 
             // Controles inferiores compactos
             Padding(
-              padding: const EdgeInsets.fromLTRB(36, 0, 36, 20),
+              padding: const EdgeInsets.fromLTRB(36, 0, 36, 32),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
