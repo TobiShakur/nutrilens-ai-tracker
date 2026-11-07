@@ -227,7 +227,7 @@ class AlacenaScreen extends StatelessWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 125),
             sliver: SliverList.builder(
               itemCount: items.length + 1,
               itemBuilder: (context, index) {

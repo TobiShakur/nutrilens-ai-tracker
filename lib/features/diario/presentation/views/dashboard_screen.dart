@@ -47,7 +47,7 @@ class DashboardScreen extends StatelessWidget {
           const SliverToBoxAdapter(child: _EmptyDayCard())
         else
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 125),
             sliver: SliverList.builder(
               itemCount: dia.comidas.length,
               itemBuilder: (context, index) {

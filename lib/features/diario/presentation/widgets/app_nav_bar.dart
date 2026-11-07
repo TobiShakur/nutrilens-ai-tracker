@@ -19,9 +19,9 @@ class AppNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.only(bottom: 14),
+      minimum: const EdgeInsets.only(bottom: 26),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 18),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: AppColors.cardWhite,
