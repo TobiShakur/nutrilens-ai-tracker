@@ -17,44 +17,48 @@ class AppNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 18, left: 18, right: 18),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: const Color(0xFFD3E0D8), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
-            blurRadius: 22,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _NavItem(
-            icon: Icons.cottage_rounded,
-            label: 'Inicio',
-            isActive: selectedIndex == 0,
-            onTap: () => onItemSelected(0),
-          ),
-          _NavItem(
-            icon: Icons.inventory_2_rounded,
-            label: 'Alacena',
-            isActive: selectedIndex == 1,
-            onTap: () => onItemSelected(1),
-          ),
-          _CenterButton(onTap: onCenterTap),
-          _NavItem(
-            icon: Icons.person_rounded,
-            label: 'Perfil',
-            isActive: selectedIndex == 2,
-            onTap: () => onItemSelected(2),
-          ),
-        ],
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.cardWhite,
+          borderRadius: BorderRadius.circular(36),
+          border: Border.all(color: const Color(0xFFD3E0D8), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 22,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _NavItem(
+              icon: Icons.cottage_rounded,
+              label: 'Inicio',
+              isActive: selectedIndex == 0,
+              onTap: () => onItemSelected(0),
+            ),
+            _NavItem(
+              icon: Icons.inventory_2_rounded,
+              label: 'Alacena',
+              isActive: selectedIndex == 1,
+              onTap: () => onItemSelected(1),
+            ),
+            _CenterButton(onTap: onCenterTap),
+            _NavItem(
+              icon: Icons.person_rounded,
+              label: 'Perfil',
+              isActive: selectedIndex == 2,
+              onTap: () => onItemSelected(2),
+            ),
+          ],
+        ),
       ),
     );
   }

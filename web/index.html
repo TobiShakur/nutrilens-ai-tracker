@@ -5,11 +5,14 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="NutriLens AI • FoodTech & Clean Architecture con Provider">
+  <meta name="theme-color" content="#0C4E36">
 
-  <!-- iOS meta tags & icons -->
+  <!-- iOS & Mobile Web App (Full-screen native feel) -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="NutriLens AI">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
@@ -28,8 +31,17 @@
     body, html {
       margin: 0;
       padding: 0;
-      background-color: #07140E;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #F6F8F5;
       font-family: 'Rubik', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (min-width: 600px) {
+      body, html {
+        background-color: #07140E;
+      }
     }
   </style>
 </head>
@@ -51,6 +63,6 @@
       });
     }
   </script>
-  <script src="flutter_bootstrap.js?v=2" async></script>
+  <script src="flutter_bootstrap.js?v=3" async></script>
 </body>
 </html>
