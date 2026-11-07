@@ -6,6 +6,7 @@ import '../../domain/entities/categoria_alacena.dart';
 import '../../domain/entities/ingrediente_alacena.dart';
 import '../../domain/results/alacena_result.dart';
 import '../viewmodels/alacena_viewmodel.dart';
+import 'barcode_scanner_sheet.dart';
 import 'categoria_dialog.dart';
 
 class AgregarIngredienteSheet extends StatefulWidget {
@@ -94,6 +95,60 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
         res.emoji,
       );
       setState(() => _categoria = nueva);
+    }
+  }
+
+  Future<void> _abrirEscanerCodigoBarras() async {
+    final producto = await BarcodeScannerSheet.show(context);
+    if (producto == null || !mounted) return;
+
+    final vm = context.read<AlacenaViewModel>();
+    final catSugerida = producto.resolverCategoriaSugerida(vm.categorias);
+
+    setState(() {
+      _nombreCtrl.text = producto.nombre;
+      _marcaCtrl.text = producto.marca;
+      _porcionCtrl.text = producto.porcionGramos.round().toString();
+      _caloriasCtrl.text = producto.calorias.toString();
+      _proteinasCtrl.text = producto.proteinas.toString();
+      _carbosCtrl.text = producto.carbohidratos.toString();
+      _grasasCtrl.text = producto.grasas.toString();
+      _categoria = catSugerida;
+      _error = null;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.forestDark,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.pistachio,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '¡Datos autocompletados desde ${producto.fuente}!',
+                    style: AppTextStyles.body(
+                      size: 13,
+                      color: Colors.white,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
     }
   }
 
@@ -387,26 +442,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                     color: AppColors.pistachio.withValues(alpha: 0.35),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(14),
-                      onTap: () {
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            SnackBar(
-                              backgroundColor: AppColors.forestDark,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              content: Text(
-                                'Escáner de código de barras listo para vincular.',
-                                style: AppTextStyles.body(
-                                  size: 13,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          );
-                      },
+                      onTap: _abrirEscanerCodigoBarras,
                       child: Container(
                         padding: const EdgeInsets.all(9),
                         decoration: BoxDecoration(
