@@ -12,7 +12,7 @@ import '../../features/perfil/domain/entities/configuracion_nutricional.dart';
 /// Servicio de persistencia local offline-first respaldado por SharedPreferences.
 /// Permite mantener el historial del diario, la alacena y el perfil tras recargar el navegador o reiniciar la app.
 class LocalStorageService {
-  static const _keyDias = 'nutrilens_dias_mes_v2';
+  static const _keyDias = 'nutrilens_dias_mes_v3';
   static const _keyAlacena = 'nutrilens_alacena_items_v1';
   static const _keyConfig = 'nutrilens_configuracion_perfil_v1';
 

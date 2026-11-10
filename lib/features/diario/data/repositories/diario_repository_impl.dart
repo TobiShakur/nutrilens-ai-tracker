@@ -13,6 +13,7 @@ import '../../domain/repositories/diario_repository.dart';
 /// Implementación del repositorio de diario con fechas dinámicas y persistencia offline.
 class DiarioRepositoryImpl implements DiarioRepository {
   final LocalStorageService? storageService;
+  final DateTime? fechaReferencia;
 
   static const List<String> _abrevDias = [
     'Do',
@@ -24,24 +25,69 @@ class DiarioRepositoryImpl implements DiarioRepository {
     'Sa',
   ];
 
-  // Fecha de referencia base (Miércoles 4 de Noviembre)
-  static final DateTime _fechaHoyRef = DateTime(2026, 11, 4);
-
-  static const int _diasAtras = 30; // 30 días de historial hacia atrás
-  static const int _diasAdelante = 3; // Ju, Vi, Sa días futuros en la semana
+  static const int _diasAtras = 30; // 1 mes (30 días) de historial hacia atrás
+  static const int _diasAdelante =
+      4; // 4 días hacia adelante desde el día actual
 
   int _secuencia = 0;
 
-  DiarioRepositoryImpl({this.storageService});
+  DiarioRepositoryImpl({this.storageService, this.fechaReferencia});
+
+  DateTime get _fechaHoy {
+    final now = fechaReferencia ?? DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  static String _formatearFechaIso(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   @override
   Map<int, DiarioDia> getDiasIniciales() {
+    final hoy = _fechaHoy;
+    final hoyIso = _formatearFechaIso(hoy);
+    const totalDias = _diasAtras + 1 + _diasAdelante;
+    final iniciales = _generarSemillaDinamica(hoy);
+
     final guardado = storageService?.obtenerDias();
     if (guardado != null && guardado.isNotEmpty) {
-      return guardado;
+      if (guardado.length == totalDias &&
+          guardado[_diasAtras]?.fechaIso == hoyIso) {
+        return guardado;
+      }
+
+      final porFecha = <String, DiarioDia>{};
+      for (final dia in guardado.values) {
+        if (dia.fechaIso != null) {
+          porFecha[dia.fechaIso!] = dia;
+        }
+      }
+
+      if (porFecha.isNotEmpty) {
+        final sincronizado = <int, DiarioDia>{};
+        for (final entry in iniciales.entries) {
+          final base = entry.value;
+          final previo = base.fechaIso != null
+              ? porFecha[base.fechaIso!]
+              : null;
+          if (previo != null) {
+            final usarComidasPrevias =
+                previo.comidas.isNotEmpty || entry.key != _diasAtras;
+            sincronizado[entry.key] = base.copyWith(
+              metaCalorias: previo.metaCalorias,
+              metaProteinas: previo.metaProteinas,
+              metaGrasas: previo.metaGrasas,
+              metaCarbos: previo.metaCarbos,
+              comidas: usarComidasPrevias ? previo.comidas : base.comidas,
+            );
+          } else {
+            sincronizado[entry.key] = base;
+          }
+        }
+        storageService?.guardarDias(sincronizado);
+        return sincronizado;
+      }
     }
 
-    final iniciales = _generarSemillaDinamica();
     storageService?.guardarDias(iniciales);
     return iniciales;
   }
@@ -51,14 +97,15 @@ class DiarioRepositoryImpl implements DiarioRepository {
     await storageService?.guardarDias(dias);
   }
 
-  /// Genera dinámicamente el mes de historial calculando fechas y etiquetas por código.
-  Map<int, DiarioDia> _generarSemillaDinamica() {
+  /// Genera dinámicamente la ventana de 1 mes atrás, día actual y 4 días adelante.
+  Map<int, DiarioDia> _generarSemillaDinamica(DateTime hoy) {
     final map = <int, DiarioDia>{};
     const totalDias = _diasAtras + 1 + _diasAdelante;
 
     for (int i = 0; i < totalDias; i++) {
       final offset = i - _diasAtras;
-      final date = _fechaHoyRef.add(Duration(days: offset));
+      final date = hoy.add(Duration(days: offset));
+      final fechaIso = _formatearFechaIso(date);
       final abrev = _abrevDias[date.weekday % 7];
       final isHoy = offset == 0;
       final diaNombre = isHoy ? 'Hoy' : abrev;
@@ -70,6 +117,7 @@ class DiarioRepositoryImpl implements DiarioRepository {
           diaIndex: i,
           diaNombre: diaNombre,
           titulo: titulo,
+          fechaIso: fechaIso,
           metaCalorias: 2135,
           metaProteinas: 190.0,
           metaGrasas: 130.0,
@@ -82,6 +130,7 @@ class DiarioRepositoryImpl implements DiarioRepository {
           diaIndex: i,
           diaNombre: diaNombre,
           titulo: titulo,
+          fechaIso: fechaIso,
           metaCalorias: 2135,
           metaProteinas: 190.0,
           metaGrasas: 130.0,
@@ -94,6 +143,7 @@ class DiarioRepositoryImpl implements DiarioRepository {
           index: i,
           diaNombre: diaNombre,
           titulo: titulo,
+          fechaIso: fechaIso,
           offset: offset,
         );
       }
@@ -106,14 +156,16 @@ class DiarioRepositoryImpl implements DiarioRepository {
     required int index,
     required String diaNombre,
     required String titulo,
+    required String fechaIso,
     required int offset,
   }) {
     if (offset == -11) {
-      // Sa 24 Oct: día de baja ingesta/descanso para calibrar la racha en 11 días
+      // Día de baja ingesta/descanso para calibrar la racha en 11 días
       return DiarioDia(
         diaIndex: index,
         diaNombre: diaNombre,
         titulo: titulo,
+        fechaIso: fechaIso,
         metaCalorias: 2135,
         metaProteinas: 190.0,
         metaGrasas: 130.0,
@@ -127,6 +179,7 @@ class DiarioRepositoryImpl implements DiarioRepository {
       diaIndex: index,
       diaNombre: diaNombre,
       titulo: titulo,
+      fechaIso: fechaIso,
       metaCalorias: 2135,
       metaProteinas: 190.0,
       metaGrasas: 130.0,

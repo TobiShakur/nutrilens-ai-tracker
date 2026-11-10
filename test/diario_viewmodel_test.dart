@@ -48,32 +48,42 @@ void main() {
 
   group('Navegación entre días', () {
     test(
-      'diaTieneRacha y rachaDias identifican días cumplidos y racha acumulada',
+      'diaTieneRacha y rachaDias identifican días cumplidos y racha acumulada en ventana de 35 días (30 atrás + Hoy + 4 adelante)',
       () {
-        expect(vm.nombresDias.length, 34);
+        expect(vm.nombresDias.length, 35);
         expect(vm.rachaDias, 11);
-        expect(
-          vm.diaTieneRacha(29),
-          isTrue,
-        ); // Ayer (Ma 3, ~2020 kcal cumplido)
-        expect(
-          vm.diaTieneRacha(28),
-          isTrue,
-        ); // Anteayer (Lu 2, ~1980 kcal cumplido)
+        expect(vm.diaTieneRacha(29), isTrue); // Ayer (~2020 kcal cumplido)
+        expect(vm.diaTieneRacha(28), isTrue); // Anteayer (~1980 kcal cumplido)
         expect(
           vm.diaTieneRacha(30),
           isFalse,
         ); // Hoy (1255 kcal, en curso aún no alcanzó meta)
-        expect(vm.diaTieneRacha(31), isFalse); // Ju (0 kcal)
-        expect(vm.diaTieneRacha(32), isFalse); // Vi (0 kcal)
-        expect(vm.diaTieneRacha(33), isFalse); // Sa (0 kcal)
+        expect(vm.diaTieneRacha(31), isFalse); // Hoy + 1 (0 kcal)
+        expect(vm.diaTieneRacha(32), isFalse); // Hoy + 2 (0 kcal)
+        expect(vm.diaTieneRacha(33), isFalse); // Hoy + 3 (0 kcal)
+        expect(vm.diaTieneRacha(34), isFalse); // Hoy + 4 (0 kcal)
+      },
+    );
+
+    test(
+      'respeta el día actual real (DateTime.now) y genera 30 días atrás y 4 adelante',
+      () {
+        final now = DateTime.now();
+        final hoyEsperado =
+            '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+        expect(vm.diaActual.diaNombre, 'Hoy');
+        expect(vm.diaActual.fechaIso, hoyEsperado);
+        expect(vm.todosLosDias.length, 35);
+        expect(vm.todosLosDias.first.diaIndex, 0);
+        expect(vm.todosLosDias.last.diaIndex, 34);
       },
     );
 
     test('seleccionarDia cambia de día y notifica una vez', () {
       vm.seleccionarDia(29);
 
-      expect(vm.diaActual.diaNombre, 'Ma');
+      expect(vm.diaActual.diaNombre, isNot('Hoy'));
       expect(vm.diaActual.caloriasActuales, greaterThan(1900));
       expect(notificaciones, 1);
     });

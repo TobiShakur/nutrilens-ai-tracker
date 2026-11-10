@@ -1,13 +1,13 @@
-// SELECTOR HORIZONTAL DE DÍAS (DISEÑO CLEAN CON CENTRADO PRECISO POR SCROLLABLE)
-// Utiliza Scrollable.ensureVisible(alignment: 0.5) con insets dinámicos de LayoutBuilder
-// para garantizar que cualquier día seleccionado (inclusive el primero y el último)
-// se ubique matemáticamente en el centro exacto del viewport.
+// SELECTOR HORIZONTAL DE DÍAS (DISEÑO CLEAN CON CENTRADO NATURAL Y TOPE EN BORDES)
+// Utiliza Scrollable.ensureVisible(alignment: 0.5) sin márgenes fantasma, logrando que
+// todos los días centrales (incluido Hoy) queden en el medio y los días de los extremos
+// hagan tope de forma natural contra los bordes del contenedor.
 
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
-/// Selector horizontal de días deslizable con autocentrado garantizado.
+/// Selector horizontal de días deslizable con autocentrado natural.
 class WeekSelector extends StatefulWidget {
   final List<String> nombres;
   final int seleccionado;
@@ -48,10 +48,11 @@ class _WeekSelectorState extends State<WeekSelector> {
   @override
   void didUpdateWidget(WeekSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final cambioCantidad = oldWidget.nombres.length != widget.nombres.length;
     _sincronizarKeys();
-    if (oldWidget.seleccionado != widget.seleccionado) {
+    if (oldWidget.seleccionado != widget.seleccionado || cambioCantidad) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _centrarSeleccionado(widget.seleccionado, animar: true);
+        _centrarSeleccionado(widget.seleccionado, animar: !cambioCantidad);
       });
     }
   }
@@ -77,70 +78,63 @@ class _WeekSelectorState extends State<WeekSelector> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Inset dinámico para que cualquier pastilla en los extremos (principio o fin)
-        // cuente con espacio de scroll suficiente para alcanzar el 50% exacto del contenedor.
-        final sideInset = constraints.maxWidth > 70
-            ? (constraints.maxWidth / 2) - 35.0
-            : 0.0;
-
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                if (sideInset > 0) SizedBox(width: sideInset),
-                for (var i = 0; i < widget.nombres.length; i++) ...[
-                  GestureDetector(
-                    key: _itemKeys[i],
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      widget.onSelected(i);
-                      _centrarSeleccionado(i, animar: true);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: i == widget.seleccionado
-                            ? AppColors.pistachio
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.nombres[i],
-                        style: AppTextStyles.body(
-                          size: 13,
-                          weight: i == widget.seleccionado
-                              ? FontWeight.w900
-                              : FontWeight.w600,
-                          color: i == widget.seleccionado
-                              ? AppColors.forestDark
-                              : Colors.white70,
-                        ),
-                      ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Row(
+          children: [
+            for (var i = 0; i < widget.nombres.length; i++) ...[
+              GestureDetector(
+                key: _itemKeys[i],
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  if (i == widget.seleccionado) {
+                    _centrarSeleccionado(i, animar: true);
+                  } else {
+                    widget.onSelected(i);
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: i == widget.seleccionado
+                        ? AppColors.pistachio
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.nombres[i],
+                    style: AppTextStyles.body(
+                      size: 13,
+                      weight: i == widget.seleccionado
+                          ? FontWeight.w900
+                          : FontWeight.w600,
+                      color: i == widget.seleccionado
+                          ? AppColors.forestDark
+                          : Colors.white70,
                     ),
                   ),
-                  if (i < widget.nombres.length - 1) const SizedBox(width: 4),
-                ],
-                if (sideInset > 0) SizedBox(width: sideInset),
-              ],
-            ),
-          ),
-        );
-      },
+                ),
+              ),
+              if (i < widget.nombres.length - 1) const SizedBox(width: 4),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

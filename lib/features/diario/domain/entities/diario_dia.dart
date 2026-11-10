@@ -8,6 +8,8 @@ class DiarioDia {
   final int diaIndex; // Índice cronológico del día
   final String diaNombre; // 'Do', 'Lu', 'Ma', 'Hoy', 'Ju', 'Vi', 'Sa'
   final String? titulo; // Etiqueta para píldora (e.g. 'Lu 26', 'Hoy', etc.)
+  final String?
+  fechaIso; // Fecha calendario YYYY-MM-DD para sincronización real
   final int metaCalorias;
   final double metaProteinas;
   final double metaGrasas;
@@ -18,6 +20,7 @@ class DiarioDia {
     required this.diaIndex,
     required this.diaNombre,
     this.titulo,
+    this.fechaIso,
     this.metaCalorias = 2135,
     this.metaProteinas = 190.0,
     this.metaGrasas = 130.0,
@@ -104,6 +107,7 @@ class DiarioDia {
     int? diaIndex,
     String? diaNombre,
     String? titulo,
+    String? fechaIso,
     int? metaCalorias,
     double? metaProteinas,
     double? metaGrasas,
@@ -114,6 +118,7 @@ class DiarioDia {
       diaIndex: diaIndex ?? this.diaIndex,
       diaNombre: diaNombre ?? this.diaNombre,
       titulo: titulo ?? this.titulo,
+      fechaIso: fechaIso ?? this.fechaIso,
       metaCalorias: metaCalorias ?? this.metaCalorias,
       metaProteinas: metaProteinas ?? this.metaProteinas,
       metaGrasas: metaGrasas ?? this.metaGrasas,
@@ -126,6 +131,7 @@ class DiarioDia {
     'diaIndex': diaIndex,
     'diaNombre': diaNombre,
     'titulo': titulo,
+    'fechaIso': fechaIso,
     'metaCalorias': metaCalorias,
     'metaProteinas': metaProteinas,
     'metaGrasas': metaGrasas,
@@ -139,6 +145,7 @@ class DiarioDia {
       diaIndex: (json['diaIndex'] as num).toInt(),
       diaNombre: json['diaNombre'] as String,
       titulo: json['titulo'] as String?,
+      fechaIso: json['fechaIso'] as String?,
       metaCalorias: (json['metaCalorias'] as num?)?.toInt() ?? 2135,
       metaProteinas: (json['metaProteinas'] as num?)?.toDouble() ?? 190.0,
       metaGrasas: (json['metaGrasas'] as num?)?.toDouble() ?? 130.0,
