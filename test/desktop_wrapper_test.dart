@@ -105,6 +105,7 @@ void main() {
         expect(find.text('Architecture & Stack'), findsOneWidget);
         expect(find.text('1'), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
         expect(
           find.textContaining('barcode', findRichText: true),
           findsOneWidget,
@@ -112,6 +113,17 @@ void main() {
         expect(
           find.textContaining(
             'prepared / home-cooked meal',
+            findRichText: true,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Health Score', findRichText: true),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            'macronutrients and micronutrients',
             findRichText: true,
           ),
           findsOneWidget,

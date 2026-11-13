@@ -426,6 +426,20 @@ class _ProductOverviewCard extends StatelessWidget {
               _OverviewSpan(' and a personalized experience.'),
             ],
           ),
+          const SizedBox(height: 8),
+          const _OverviewStepRow(
+            step: '3',
+            spans: [
+              _OverviewSpan('Score every meal: ', bold: true),
+              _OverviewSpan('NutriLens also calculates a '),
+              _OverviewSpan('Health Score', bold: true),
+              _OverviewSpan(' by analyzing '),
+              _OverviewSpan('macronutrients and micronutrients', bold: true),
+              _OverviewSpan(
+                ', so you know at a glance how healthy each meal is.',
+              ),
+            ],
+          ),
         ],
       ),
     );
