@@ -28,11 +28,11 @@ jobs:
       - name: Verify Code Formatting
         run: dart format --output=none --set-exit-if-changed .
 
-      - name: Static Code Analysis (Strict Linter)
+      - name: Flutter Analyze
         run: flutter analyze
 
       - name: Execute Unit and ViewModel Tests
         run: flutter test --coverage
 
       - name: Build Web Release (Smoke Test)
-        run: flutter build web --release --dart-define=GEMINI_API_KEY=""
+        run: flutter build web --release --dart-define=GEMINI_PROXY_URL=""

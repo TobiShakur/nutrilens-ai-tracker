@@ -45,11 +45,6 @@ app.*.map.json
 /android/app/release
 
 
-# Firebase & Deployments
-.firebase/
-firebase-debug.log*
-firestore-debug.log*
-
 # Environment Variables & Secrets
 .env
 *.env

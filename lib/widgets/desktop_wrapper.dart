@@ -27,8 +27,8 @@ class DesktopWrapper extends StatelessWidget {
     'Clean Architecture',
     'MVVM + Provider',
     'Gemini API (LLM)',
-    'Open Food Facts API',
-    '150 Unit & Widget Tests',
+    'Open Food Facts API v2',
+    '153 Unit & Widget Tests',
   ];
 
   final Widget child;
