@@ -23,13 +23,12 @@ class DesktopWrapper extends StatelessWidget {
   static const Color _linkHoverBg = Color(0xFF13291F);
 
   static const List<String> _stackPills = [
+    'Dart & Flutter',
     'Clean Architecture',
     'MVVM + Provider',
-    'Dart 3 Sealed States',
-    '133 Unit & Widget Tests',
-    'Gemini 2.5 Flash Vision',
-    'Open Food Facts API v2',
-    'Pantry-First Macro Matching',
+    'Gemini API (LLM)',
+    'Open Food Facts API',
+    '150 Unit & Widget Tests',
   ];
 
   final Widget child;
@@ -153,7 +152,7 @@ class _ShowcaseInfoColumn extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Pantry-first meal & macro tracking powered by Gemini Vision and deterministic nutrition math.',
+          'Accurate macro tracking for home-cooked and prepared meals—calculated from your real pantry ingredients instead of generic estimates.',
           style: AppTextStyles.body(
             size: isCompactDesktop ? 14 : 15,
             weight: FontWeight.w500,
@@ -163,6 +162,8 @@ class _ShowcaseInfoColumn extends StatelessWidget {
         ),
         SizedBox(height: sectionGap),
         const _AuthorCard(),
+        SizedBox(height: sectionGap),
+        const _ProductOverviewCard(),
         SizedBox(height: sectionGap),
         Text(
           'Architecture & Stack',
@@ -181,8 +182,6 @@ class _ShowcaseInfoColumn extends StatelessWidget {
               _StackPill(label: label),
           ],
         ),
-        SizedBox(height: sectionGap),
-        const _InteractiveDemoCard(),
         SizedBox(height: isCompactDesktop ? 14 : 16),
         Wrap(
           spacing: 12,
@@ -302,7 +301,7 @@ class _AuthorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Mobile Software Engineer · FIUBA',
+                  'Mobile Software Engineer',
                   style: AppTextStyles.body(
                     size: 12.5,
                     weight: FontWeight.w600,
@@ -344,8 +343,8 @@ class _StackPill extends StatelessWidget {
   }
 }
 
-class _InteractiveDemoCard extends StatelessWidget {
-  const _InteractiveDemoCard();
+class _ProductOverviewCard extends StatelessWidget {
+  const _ProductOverviewCard();
 
   @override
   Widget build(BuildContext context) {
@@ -371,14 +370,14 @@ class _InteractiveDemoCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
-                      Icons.touch_app_rounded,
+                      Icons.kitchen_rounded,
                       size: 16,
                       color: AppColors.pistachio,
                     ),
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Interactive Live Demo',
+                        'How It Works',
                         style: AppTextStyles.title(
                           size: 13.5,
                           weight: FontWeight.w700,
@@ -389,7 +388,7 @@ class _InteractiveDemoCard extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  'Try on device →',
+                  'Try live →',
                   style: AppTextStyles.body(
                     size: 11.5,
                     weight: FontWeight.w600,
@@ -400,42 +399,31 @@ class _InteractiveDemoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const _DemoStepRow(
+          const _OverviewStepRow(
             step: '1',
             spans: [
-              _StepSpan('Scanner: ', bold: true),
-              _StepSpan('Tap the camera button, then choose '),
-              _StepSpan('Manual', bold: true),
-              _StepSpan(' or '),
-              _StepSpan('Fototeca / Library', bold: true),
-              _StepSpan(' (upload photo) to log a meal.'),
+              _OverviewSpan('Build your pantry: ', bold: true),
+              _OverviewSpan(
+                'Save the ingredients you use every day by scanning a ',
+              ),
+              _OverviewSpan('barcode', bold: true),
+              _OverviewSpan(', snapping a '),
+              _OverviewSpan('product photo', bold: true),
+              _OverviewSpan(', or reading the '),
+              _OverviewSpan('nutrition facts label', bold: true),
+              _OverviewSpan(' on the package.'),
             ],
           ),
           const SizedBox(height: 8),
-          const _DemoStepRow(
+          const _OverviewStepRow(
             step: '2',
             spans: [
-              _StepSpan('AI Health Score: ', bold: true),
-              _StepSpan('Tap any '),
-              _StepSpan('?/100', bold: true),
-              _StepSpan(
-                ' badge on a meal card or sheet for on-demand AI evaluation.',
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const _DemoStepRow(
-            step: '3',
-            spans: [
-              _StepSpan('Pantry Barcode: ', bold: true),
-              _StepSpan('Open '),
-              _StepSpan('Alacena / Pantry', bold: true),
-              _StepSpan(' → '),
-              _StepSpan(
-                'Agregar nuevo ingrediente / Add new ingredient',
-                bold: true,
-              ),
-              _StepSpan(' → barcode icon to scan or type a product.'),
+              _OverviewSpan('Log prepared meals: ', bold: true),
+              _OverviewSpan('When you track a '),
+              _OverviewSpan('prepared / home-cooked meal', bold: true),
+              _OverviewSpan(', NutriLens matches it against your pantry for '),
+              _OverviewSpan('real macros', bold: true),
+              _OverviewSpan(' and a personalized experience.'),
             ],
           ),
         ],
@@ -444,18 +432,18 @@ class _InteractiveDemoCard extends StatelessWidget {
   }
 }
 
-class _StepSpan {
+class _OverviewSpan {
   final String text;
   final bool bold;
 
-  const _StepSpan(this.text, {this.bold = false});
+  const _OverviewSpan(this.text, {this.bold = false});
 }
 
-class _DemoStepRow extends StatelessWidget {
+class _OverviewStepRow extends StatelessWidget {
   final String step;
-  final List<_StepSpan> spans;
+  final List<_OverviewSpan> spans;
 
-  const _DemoStepRow({required this.step, required this.spans});
+  const _OverviewStepRow({required this.step, required this.spans});
 
   @override
   Widget build(BuildContext context) {

@@ -4,13 +4,12 @@ import 'package:nutrilens_provider/widgets/desktop_wrapper.dart';
 
 void main() {
   const stackPills = [
+    'Dart & Flutter',
     'Clean Architecture',
     'MVVM + Provider',
-    'Dart 3 Sealed States',
-    '133 Unit & Widget Tests',
-    'Gemini 2.5 Flash Vision',
-    'Open Food Facts API v2',
-    'Pantry-First Macro Matching',
+    'Gemini API (LLM)',
+    'Open Food Facts API',
+    '150 Unit & Widget Tests',
   ];
 
   Future<void> pumpWithViewport(
@@ -49,7 +48,7 @@ void main() {
       expect(find.byKey(childKey), findsOneWidget);
       expect(tester.getSize(find.byKey(childKey)), const Size(390, 844));
       expect(find.text('Mobile Engineering Showcase'), findsNothing);
-      expect(find.text('Interactive Live Demo'), findsNothing);
+      expect(find.text('How It Works'), findsNothing);
       expect(find.text('Tobías Gutiérrez'), findsNothing);
     },
   );
@@ -68,7 +67,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(tester.getSize(find.byKey(childKey)), const Size(859, 800));
       expect(find.text('Mobile Engineering Showcase'), findsNothing);
-      expect(find.text('Interactive Live Demo'), findsNothing);
+      expect(find.text('How It Works'), findsNothing);
       expect(find.text('Tobías Gutiérrez'), findsNothing);
     },
   );
@@ -95,28 +94,43 @@ void main() {
         expect(find.text('Mobile Engineering Showcase'), findsOneWidget);
         expect(find.text('NutriLens AI'), findsOneWidget);
         expect(find.text('Tobías Gutiérrez'), findsOneWidget);
-        expect(find.text('Mobile Software Engineer · FIUBA'), findsOneWidget);
+        expect(find.text('Mobile Software Engineer'), findsOneWidget);
+        expect(find.textContaining('FIUBA'), findsNothing);
 
         for (final pill in stackPills) {
           expect(find.text(pill), findsOneWidget);
         }
 
-        expect(find.text('Interactive Live Demo'), findsOneWidget);
+        expect(find.text('How It Works'), findsOneWidget);
+        expect(find.text('Architecture & Stack'), findsOneWidget);
         expect(find.text('1'), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
-        expect(find.text('3'), findsOneWidget);
         expect(
-          find.textContaining('Fototeca', findRichText: true),
+          find.textContaining('barcode', findRichText: true),
           findsOneWidget,
         );
         expect(
-          find.textContaining('?/100', findRichText: true),
+          find.textContaining(
+            'prepared / home-cooked meal',
+            findRichText: true,
+          ),
           findsOneWidget,
         );
-        expect(
-          find.textContaining('Agregar nuevo ingrediente', findRichText: true),
-          findsOneWidget,
-        );
+
+        final authorBottom = tester
+            .getBottomLeft(find.text('Mobile Software Engineer'))
+            .dy;
+        final overviewTop = tester.getTopLeft(find.text('How It Works')).dy;
+        final stackTop = tester
+            .getTopLeft(find.text('Architecture & Stack'))
+            .dy;
+        final linksTop = tester
+            .getTopLeft(find.text('github.com/TobiShakur'))
+            .dy;
+
+        expect(overviewTop, greaterThan(authorBottom));
+        expect(stackTop, greaterThan(overviewTop));
+        expect(linksTop, greaterThan(stackTop));
 
         expect(find.text('github.com/TobiShakur'), findsOneWidget);
         expect(find.text('LinkedIn'), findsOneWidget);

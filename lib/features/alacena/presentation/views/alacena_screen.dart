@@ -270,83 +270,106 @@ class _AgregarIngredienteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final bool tieneQuery = query.trim().isNotEmpty;
+    final titleText = tieneQuery
+        ? l10n.pantryAddSpecific(query)
+        : l10n.pantryAddNew;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: AppColors.cardWhite,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: AppColors.pistachioDark.withValues(alpha: 0.35),
-            width: 1.4,
+    return Container(
+      key: const ValueKey('alacena-add-ingredient-cta'),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forestDark.withValues(alpha: 0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.forestDark.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+        ],
+      ),
+      child: Semantics(
+        button: true,
+        label: titleText,
+        child: Material(
+          color: AppColors.forestDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: AppColors.pistachio.withValues(alpha: 0.65),
+              width: 1.5,
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.pistachio.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.add_rounded,
-                color: AppColors.forestDark,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            splashColor: AppColors.pistachio.withValues(alpha: 0.18),
+            highlightColor: AppColors.pistachio.withValues(alpha: 0.10),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              child: Row(
                 children: [
-                  Text(
-                    tieneQuery
-                        ? l10n.pantryAddSpecific(query)
-                        : l10n.pantryAddNew,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.title(
-                      size: 14.5,
-                      weight: FontWeight.w700,
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.pistachio,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
                       color: AppColors.forestDark,
+                      size: 26,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.pantryAddSubtitle,
-                    style: AppTextStyles.body(
-                      size: 11.5,
-                      color: AppColors.textMuted,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          titleText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.title(
+                            size: 14.5,
+                            weight: FontWeight.w800,
+                            color: AppColors.textLight,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.pantryAddSubtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body(
+                            size: 11.5,
+                            weight: FontWeight.w500,
+                            color: AppColors.textMutedLight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.pistachio,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: AppColors.forestDark,
+                      size: 16,
                     ),
                   ),
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                color: AppColors.inputBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.forestDark,
-                size: 16,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
