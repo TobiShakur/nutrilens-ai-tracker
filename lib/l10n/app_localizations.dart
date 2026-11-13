@@ -1046,6 +1046,48 @@ abstract class AppLocalizations {
   /// **'Escanear plato con cámara'**
   String get scannerCaptureSemantics;
 
+  /// No description provided for @scannerSamplePill.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba'**
+  String get scannerSamplePill;
+
+  /// No description provided for @scannerSamplePillSemantics.
+  ///
+  /// In es, this message translates to:
+  /// **'Probar con plato real de ejemplo'**
+  String get scannerSamplePillSemantics;
+
+  /// No description provided for @scannerSampleTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Sin foto a mano?'**
+  String get scannerSampleTitle;
+
+  /// No description provided for @scannerSampleDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'En web podés probar el escáner con un plato real si no tenés una foto a mano.'**
+  String get scannerSampleDescription;
+
+  /// No description provided for @scannerSampleCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Probar con plato real'**
+  String get scannerSampleCta;
+
+  /// No description provided for @scannerSampleCloseSemantics.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar aviso de plato de prueba'**
+  String get scannerSampleCloseSemantics;
+
+  /// No description provided for @scannerSampleImageSemantics.
+  ///
+  /// In es, this message translates to:
+  /// **'Miniatura del plato de prueba'**
+  String get scannerSampleImageSemantics;
+
   /// No description provided for @cameraUnavailableTitle.
   ///
   /// In es, this message translates to:

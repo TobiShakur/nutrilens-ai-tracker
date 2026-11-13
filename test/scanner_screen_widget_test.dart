@@ -1,5 +1,6 @@
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nutrilens_provider/l10n/app_localizations.dart';
 import 'package:nutrilens_provider/features/alacena/data/repositories/alacena_repository_impl.dart';
@@ -91,12 +92,16 @@ final Uint8List _valid1x1Png = Uint8List.fromList([
 
 class _FakeCameraPreviewController extends ChangeNotifier
     implements CameraPreviewController {
-  CameraPreviewStatus _status = CameraPreviewStatus.unavailable;
+  CameraPreviewStatus _status;
   bool _flashOn = false;
   int initializeCalls = 0;
   int pauseCalls = 0;
   int resumeCalls = 0;
   ImagenPlato? livePhoto;
+
+  _FakeCameraPreviewController({
+    CameraPreviewStatus initialStatus = CameraPreviewStatus.unavailable,
+  }) : _status = initialStatus;
 
   @override
   CameraPreviewStatus get status => _status;
@@ -150,6 +155,9 @@ class _FakeCaptureService implements ImageCaptureService {
 
 class _FakeScannerRepository implements ScannerRepository {
   bool failOnce = false;
+  ImagenPlato? lastImage;
+  String? lastLanguageCode;
+  Completer<PlatoDetectado>? pendingScan;
 
   @override
   Future<PlatoDetectado> escanearPlato({
@@ -158,6 +166,11 @@ class _FakeScannerRepository implements ScannerRepository {
     required List<IngredienteAlacena> alacenaUsuario,
     String languageCode = 'es',
   }) async {
+    lastImage = imagen;
+    lastLanguageCode = languageCode;
+    if (pendingScan != null) {
+      return pendingScan!.future;
+    }
     if (failOnce) {
       failOnce = false;
       throw const ScannerTimeoutFailure();
@@ -186,6 +199,7 @@ void main() {
     required AlacenaViewModel alacenaVM,
     required DiarioViewModel diarioVM,
     required CameraPreviewController cameraCtrl,
+    Locale locale = const Locale('es'),
   }) {
     return MultiProvider(
       providers: [
@@ -194,7 +208,7 @@ void main() {
         ChangeNotifierProvider<DiarioViewModel>.value(value: diarioVM),
       ],
       child: MaterialApp(
-        locale: const Locale('es'),
+        locale: locale,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Builder(
@@ -361,6 +375,178 @@ void main() {
       expect(diarioVM.diaActual.comidas.last.titulo, 'Bowl Manual');
       expect(scanVM.state, const ScannerIdle());
       expect(find.text('Open Scanner'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Sample meal pill fits 390px top bar with flash, toggles card, dismisses on outside tap, disables while busy, and analyzes bundled asset bytes',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 720);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final pending = Completer<PlatoDetectado>();
+      final repo = _FakeScannerRepository()..pendingScan = pending;
+      final scanVM = ScannerViewModel(
+        repository: repo,
+        imageCaptureService: _FakeCaptureService(),
+      );
+      final alacenaVM = AlacenaViewModel(repository: AlacenaRepositoryImpl());
+      final diarioVM = DiarioViewModel(repository: DiarioRepositoryImpl());
+      final cameraCtrl = _FakeCameraPreviewController(
+        initialStatus: CameraPreviewStatus.ready,
+      );
+      addTearDown(() {
+        scanVM.dispose();
+        alacenaVM.dispose();
+        diarioVM.dispose();
+        cameraCtrl.dispose();
+      });
+
+      await tester.pumpWidget(
+        buildTestApp(
+          scanVM: scanVM,
+          alacenaVM: alacenaVM,
+          diarioVM: diarioVM,
+          cameraCtrl: cameraCtrl,
+          locale: const Locale('es'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Scanner'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Prueba'), findsOneWidget);
+      expect(find.byTooltip('Encender flash'), findsOneWidget);
+
+      // Open sample meal card.
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('¿Sin foto a mano?'), findsOneWidget);
+      expect(find.text('Probar con plato real'), findsOneWidget);
+
+      // Tapping outside the card (top-left inside viewfinder scrim) dismisses it.
+      final scaffoldRect = tester.getRect(find.byType(ClipRRect).first);
+      await tester.tapAt(Offset(scaffoldRect.left + 12, scaffoldRect.top + 12));
+      await tester.pumpAndSettle();
+      expect(find.text('¿Sin foto a mano?'), findsNothing);
+
+      // Re-open and trigger sample meal analysis.
+      await tester.tap(find.text('Prueba'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Probar con plato real'));
+      await tester.pump();
+      await tester.pump();
+
+      // Card dismissed, sample image shown in preview while analyzing, pill disabled.
+      expect(find.text('¿Sin foto a mano?'), findsNothing);
+      expect(scanVM.state, isA<ScannerAnalyzing>());
+      expect(find.text('Analizando nutrientes...'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+
+      // Tapping "Prueba" while busy does nothing.
+      await tester.tap(find.text('Prueba'));
+      await tester.pump();
+      expect(find.text('¿Sin foto a mano?'), findsNothing);
+
+      // Verify exact asset bytes were loaded and passed to repository.
+      final expectedData = await rootBundle.load(
+        'assets/images/sample_meal.jpg',
+      );
+      final expectedBytes = expectedData.buffer.asUint8List(
+        expectedData.offsetInBytes,
+        expectedData.lengthInBytes,
+      );
+      expect(repo.lastImage, isNotNull);
+      expect(repo.lastImage!.bytes, expectedBytes);
+      expect(repo.lastImage!.mimeType, 'image/jpeg');
+      expect(repo.lastLanguageCode, 'es');
+
+      // Complete AI response at standard viewport -> opens ReviewComidaSheet.
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      pending.complete(
+        PlatoDetectado(
+          id: 'plato_sample',
+          nombreSugerido: 'Pollo grillado con palta',
+          ingredientes: [
+            ComidaIngrediente.manual(
+              id: 'i1',
+              nombre: 'Pollo grillado',
+              gramos: 180,
+              calorias: 290,
+              proteinas: 52,
+              carbohidratos: 0,
+              grasas: 7,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('TOTAL DETECTADO'), findsOneWidget);
+      expect(find.text('Pollo grillado'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Sample meal card works in English locale and sends languageCode en',
+    (tester) async {
+      final repo = _FakeScannerRepository();
+      final scanVM = ScannerViewModel(
+        repository: repo,
+        imageCaptureService: _FakeCaptureService(),
+      );
+      final alacenaVM = AlacenaViewModel(repository: AlacenaRepositoryImpl());
+      final diarioVM = DiarioViewModel(repository: DiarioRepositoryImpl());
+      final cameraCtrl = _FakeCameraPreviewController();
+      addTearDown(() {
+        scanVM.dispose();
+        alacenaVM.dispose();
+        diarioVM.dispose();
+        cameraCtrl.dispose();
+      });
+
+      await tester.pumpWidget(
+        buildTestApp(
+          scanVM: scanVM,
+          alacenaVM: alacenaVM,
+          diarioVM: diarioVM,
+          cameraCtrl: cameraCtrl,
+          locale: const Locale('en'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Scanner'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sample'), findsOneWidget);
+      await tester.tap(find.text('Sample'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No photo handy?'), findsOneWidget);
+      expect(find.text('Try sample meal'), findsOneWidget);
+
+      // Dismiss via close button, then reopen and run.
+      await tester.tap(find.byTooltip('Close sample meal card'));
+      await tester.pumpAndSettle();
+      expect(find.text('No photo handy?'), findsNothing);
+
+      await tester.tap(find.text('Sample'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Try sample meal'));
+      await tester.pumpAndSettle();
+
+      expect(repo.lastLanguageCode, 'en');
+      expect(find.text('DETECTED TOTAL'), findsOneWidget);
+      expect(find.text('Pollo grillado'), findsOneWidget);
     },
   );
 }

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../alacena/presentation/viewmodels/alacena_viewmodel.dart';
 import '../../../diario/presentation/viewmodels/diario_viewmodel.dart';
 import '../../data/services/camera_preview_controller_impl.dart';
+import '../../domain/entities/imagen_plato.dart';
 import '../../domain/services/camera_preview_controller.dart';
 import '../viewmodels/scanner_state.dart';
 import '../viewmodels/scanner_viewmodel.dart';
@@ -25,9 +26,13 @@ class ScannerScreen extends StatefulWidget {
 
 class _ScannerScreenState extends State<ScannerScreen>
     with WidgetsBindingObserver {
+  static const String _sampleMealAssetPath = 'assets/images/sample_meal.jpg';
+
   late final CameraPreviewController _cameraController;
   late final bool _ownsCameraController;
   bool _pickingExternalMedia = false;
+  bool _showSampleCard = false;
+  bool _loadingSampleMeal = false;
 
   @override
   void initState() {
@@ -66,9 +71,59 @@ class _ScannerScreenState extends State<ScannerScreen>
     Navigator.pop(context);
   }
 
+  void _toggleSampleCard() {
+    if (context.read<ScannerViewModel>().isBusy || _loadingSampleMeal) return;
+    setState(() => _showSampleCard = !_showSampleCard);
+  }
+
+  void _dismissSampleCard() {
+    if (_showSampleCard) {
+      setState(() => _showSampleCard = false);
+    }
+  }
+
+  Future<void> _handleSampleMealTap() async {
+    final scanVM = context.read<ScannerViewModel>();
+    if (scanVM.isBusy || _loadingSampleMeal) return;
+
+    setState(() {
+      _showSampleCard = false;
+      _loadingSampleMeal = true;
+    });
+
+    try {
+      final data = await rootBundle.load(_sampleMealAssetPath);
+      if (!mounted) return;
+      final bytes = data.buffer.asUint8List(
+        data.offsetInBytes,
+        data.lengthInBytes,
+      );
+      final imagen = ImagenPlato.crear(
+        bytes: bytes,
+        mimeType: 'image/jpeg',
+        nombreArchivo: 'sample_meal.jpg',
+      );
+      final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
+      final languageCode = context.activeLanguageCode;
+      final ok = await scanVM.analizarImagen(
+        imagen: imagen,
+        alacenaUsuario: pantryItems,
+        languageCode: languageCode,
+      );
+      if (ok && mounted) {
+        await _onScanSuccess();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingSampleMeal = false);
+      }
+    }
+  }
+
   Future<void> _handleShutterTap() async {
     final scanVM = context.read<ScannerViewModel>();
-    if (scanVM.isBusy) return;
+    if (scanVM.isBusy || _loadingSampleMeal) return;
+    _dismissSampleCard();
     HapticFeedback.mediumImpact();
 
     final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
@@ -92,7 +147,8 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   Future<void> _handleGalleryTap() async {
     final scanVM = context.read<ScannerViewModel>();
-    if (scanVM.isBusy) return;
+    if (scanVM.isBusy || _loadingSampleMeal) return;
+    _dismissSampleCard();
 
     final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
     final languageCode = context.activeLanguageCode;
@@ -112,7 +168,8 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   Future<void> _handleRetryTap() async {
     final scanVM = context.read<ScannerViewModel>();
-    if (scanVM.isBusy) return;
+    if (scanVM.isBusy || _loadingSampleMeal) return;
+    _dismissSampleCard();
 
     final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
     final ok = await scanVM.reintentarAnalisis(
@@ -126,7 +183,8 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   Future<void> _handleManualTap() async {
     final scanVM = context.read<ScannerViewModel>();
-    if (scanVM.isBusy) return;
+    if (scanVM.isBusy || _loadingSampleMeal) return;
+    _dismissSampleCard();
 
     if (scanVM.iniciarComidaManual()) {
       await _openReviewSheet();
@@ -184,7 +242,8 @@ class _ScannerScreenState extends State<ScannerScreen>
     final preferPantry = context.select<ScannerViewModel, bool>(
       (vm) => vm.preferirAlacena,
     );
-    final isBusy = state is ScannerCapturing || state is ScannerAnalyzing;
+    final isVmBusy = state is ScannerCapturing || state is ScannerAnalyzing;
+    final isBusy = isVmBusy || _loadingSampleMeal;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     final activeImage = switch (state) {
@@ -201,7 +260,10 @@ class _ScannerScreenState extends State<ScannerScreen>
           children: [
             _ScannerTopBar(
               cameraController: _cameraController,
+              isBusy: isBusy,
+              isSampleOpen: _showSampleCard,
               onClose: _handleClose,
+              onToggleSample: _toggleSampleCard,
             ),
             Expanded(
               child: Center(
@@ -279,7 +341,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                                   : const Duration(milliseconds: 220),
                               switchInCurve: Curves.easeOutCubic,
                               switchOutCurve: Curves.easeOutCubic,
-                              child: isBusy
+                              child: isVmBusy
                                   ? _AnalyzingOverlay(
                                       key: ValueKey(state.runtimeType),
                                       isCapturing: state is ScannerCapturing,
@@ -300,6 +362,14 @@ class _ScannerScreenState extends State<ScannerScreen>
                                   .descartarError(),
                             ),
                           ),
+                          if (_showSampleCard && !isBusy)
+                            Positioned.fill(
+                              child: _SampleMealCardOverlay(
+                                assetPath: _sampleMealAssetPath,
+                                onDismiss: _dismissSampleCard,
+                                onTrySample: _handleSampleMealTap,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -374,9 +444,18 @@ class _ScannerScreenState extends State<ScannerScreen>
 
 class _ScannerTopBar extends StatelessWidget {
   final CameraPreviewController cameraController;
+  final bool isBusy;
+  final bool isSampleOpen;
   final VoidCallback onClose;
+  final VoidCallback onToggleSample;
 
-  const _ScannerTopBar({required this.cameraController, required this.onClose});
+  const _ScannerTopBar({
+    required this.cameraController,
+    required this.isBusy,
+    required this.isSampleOpen,
+    required this.onClose,
+    required this.onToggleSample,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +465,6 @@ class _ScannerTopBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Semantics(
               button: true,
@@ -405,48 +483,304 @@ class _ScannerTopBar extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              l10n.scannerTitle,
-              style: AppTextStyles.title(
-                size: 16,
-                weight: FontWeight.w800,
-                color: AppColors.textLight,
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                l10n.scannerTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.title(
+                  size: 16,
+                  weight: FontWeight.w800,
+                  color: AppColors.textLight,
+                ),
               ),
             ),
+            const SizedBox(width: 4),
             ListenableBuilder(
               listenable: cameraController,
               builder: (context, _) {
-                if (!cameraController.isReady) {
-                  return const SizedBox(width: 48, height: 48);
-                }
                 final flashOn = cameraController.isFlashOn;
-                return Semantics(
-                  button: true,
-                  toggled: flashOn,
-                  label: flashOn ? l10n.scannerFlashOff : l10n.scannerFlashOn,
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: IconButton(
-                      tooltip: flashOn
-                          ? l10n.scannerFlashOff
-                          : l10n.scannerFlashOn,
-                      icon: Icon(
-                        flashOn
-                            ? Icons.flash_on_rounded
-                            : Icons.flash_off_rounded,
-                        color: flashOn
-                            ? AppColors.pistachio
-                            : AppColors.textMutedLight,
-                        size: 22,
-                      ),
-                      onPressed: cameraController.toggleFlash,
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SampleMealTopPill(
+                      label: l10n.scannerSamplePill,
+                      semanticsLabel: l10n.scannerSamplePillSemantics,
+                      enabled: !isBusy,
+                      isSelected: isSampleOpen,
+                      onTap: onToggleSample,
                     ),
-                  ),
+                    if (cameraController.isReady) ...[
+                      const SizedBox(width: 2),
+                      Semantics(
+                        button: true,
+                        toggled: flashOn,
+                        label: flashOn
+                            ? l10n.scannerFlashOff
+                            : l10n.scannerFlashOn,
+                        child: SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            tooltip: flashOn
+                                ? l10n.scannerFlashOff
+                                : l10n.scannerFlashOn,
+                            icon: Icon(
+                              flashOn
+                                  ? Icons.flash_on_rounded
+                                  : Icons.flash_off_rounded,
+                              color: flashOn
+                                  ? AppColors.pistachio
+                                  : AppColors.textMutedLight,
+                              size: 22,
+                            ),
+                            onPressed: isBusy
+                                ? null
+                                : cameraController.toggleFlash,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 );
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SampleMealTopPill extends StatelessWidget {
+  final String label;
+  final String semanticsLabel;
+  final bool enabled;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SampleMealTopPill({
+    required this.label,
+    required this.semanticsLabel,
+    required this.enabled,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = isSelected ? AppColors.forestDark : AppColors.pistachio;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      toggled: isSelected,
+      label: semanticsLabel,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.4,
+        child: Material(
+          color: isSelected
+              ? AppColors.pistachio
+              : AppColors.pistachio.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: enabled ? onTap : null,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 36),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.pistachio
+                      : AppColors.pistachio.withValues(alpha: 0.45),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome_rounded, size: 15, color: foreground),
+                  const SizedBox(width: 5),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body(
+                      size: 12,
+                      weight: FontWeight.w800,
+                      color: foreground,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SampleMealCardOverlay extends StatelessWidget {
+  final String assetPath;
+  final VoidCallback onDismiss;
+  final VoidCallback onTrySample;
+
+  const _SampleMealCardOverlay({
+    required this.assetPath,
+    required this.onDismiss,
+    required this.onTrySample,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onDismiss,
+      child: ColoredBox(
+        color: Colors.black.withValues(alpha: 0.48),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: GestureDetector(
+              onTap: () {},
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.cardWhite,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.borderLight, width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.24),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Semantics(
+                          image: true,
+                          label: l10n.scannerSampleImageSemantics,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.asset(
+                              assetPath,
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Container(
+                                width: 72,
+                                height: 72,
+                                color: AppColors.inputBg,
+                                child: const Icon(
+                                  Icons.restaurant_rounded,
+                                  color: AppColors.forestDark,
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      l10n.scannerSampleTitle,
+                                      style: AppTextStyles.title(
+                                        size: 14.5,
+                                        weight: FontWeight.w800,
+                                        color: AppColors.forestDark,
+                                      ),
+                                    ),
+                                  ),
+                                  Semantics(
+                                    button: true,
+                                    label: l10n.scannerSampleCloseSemantics,
+                                    child: SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        tooltip:
+                                            l10n.scannerSampleCloseSemantics,
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          size: 18,
+                                          color: AppColors.textMutedAccessible,
+                                        ),
+                                        onPressed: onDismiss,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                l10n.scannerSampleDescription,
+                                style: AppTextStyles.body(
+                                  size: 12,
+                                  weight: FontWeight.w500,
+                                  color: AppColors.textMutedAccessible,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 44,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.forestDark,
+                          foregroundColor: AppColors.textLight,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 18,
+                          color: AppColors.pistachio,
+                        ),
+                        label: Text(
+                          l10n.scannerSampleCta,
+                          style: AppTextStyles.body(
+                            size: 13.5,
+                            weight: FontWeight.w800,
+                            color: AppColors.textLight,
+                          ),
+                        ),
+                        onPressed: onTrySample,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

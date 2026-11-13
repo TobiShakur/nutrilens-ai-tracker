@@ -544,6 +544,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scannerCaptureSemantics => 'Scan plate with camera';
 
   @override
+  String get scannerSamplePill => 'Sample';
+
+  @override
+  String get scannerSamplePillSemantics => 'Try with a real sample meal';
+
+  @override
+  String get scannerSampleTitle => 'No photo handy?';
+
+  @override
+  String get scannerSampleDescription =>
+      'On web you can try the scanner with a real meal photo if you don\'t have one handy.';
+
+  @override
+  String get scannerSampleCta => 'Try sample meal';
+
+  @override
+  String get scannerSampleCloseSemantics => 'Close sample meal card';
+
+  @override
+  String get scannerSampleImageSemantics => 'Sample meal thumbnail';
+
+  @override
   String get cameraUnavailableTitle => 'Live camera unavailable';
 
   @override

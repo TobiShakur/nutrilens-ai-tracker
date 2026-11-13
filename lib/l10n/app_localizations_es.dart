@@ -544,6 +544,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scannerCaptureSemantics => 'Escanear plato con cámara';
 
   @override
+  String get scannerSamplePill => 'Prueba';
+
+  @override
+  String get scannerSamplePillSemantics => 'Probar con plato real de ejemplo';
+
+  @override
+  String get scannerSampleTitle => '¿Sin foto a mano?';
+
+  @override
+  String get scannerSampleDescription =>
+      'En web podés probar el escáner con un plato real si no tenés una foto a mano.';
+
+  @override
+  String get scannerSampleCta => 'Probar con plato real';
+
+  @override
+  String get scannerSampleCloseSemantics => 'Cerrar aviso de plato de prueba';
+
+  @override
+  String get scannerSampleImageSemantics => 'Miniatura del plato de prueba';
+
+  @override
   String get cameraUnavailableTitle => 'Cámara en vivo no disponible';
 
   @override

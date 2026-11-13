@@ -116,6 +116,18 @@ class ScannerViewModel extends ChangeNotifier {
     );
   }
 
+  /// Runs AI dish analysis directly on a preloaded [imagen] (e.g., bundled
+  /// sample meal), matching the gallery analysis and review flow.
+  Future<bool> analizarImagen({
+    required ImagenPlato imagen,
+    required List<IngredienteAlacena> alacenaUsuario,
+    String languageCode = 'es',
+  }) async {
+    if (isBusy || _disposed) return false;
+    _lastLanguageCode = languageCode;
+    return _analyzeImage(imagen, alacenaUsuario, languageCode: languageCode);
+  }
+
   Future<bool> _captureAndAnalyze({
     required List<IngredienteAlacena> alacenaUsuario,
     required Future<ImagenPlato?> Function() capture,

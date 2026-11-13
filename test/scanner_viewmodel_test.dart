@@ -783,5 +783,50 @@ void main() {
         expect(res, isA<MealHealthError>());
       },
     );
+
+    test(
+      'analizarImagen transitions Analyzing -> Success and ignores concurrent calls while busy',
+      () async {
+        final completer = Completer<PlatoDetectado>();
+        final repo = _ControlledScannerRepository()
+          ..onScan = (_, _, _) => completer.future;
+        final vm = ScannerViewModel(repository: repo);
+        addTearDown(vm.dispose);
+
+        final sample = ImagenPlato.crear(
+          bytes: Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xD9]),
+          mimeType: 'image/jpeg',
+          nombreArchivo: 'sample_meal.jpg',
+        );
+
+        final first = vm.analizarImagen(
+          imagen: sample,
+          alacenaUsuario: const [],
+          languageCode: 'en',
+        );
+        expect(vm.isBusy, isTrue);
+        expect(vm.state, isA<ScannerAnalyzing>());
+        expect((vm.state as ScannerAnalyzing).imagen, sample);
+
+        // Concurrent call while busy must be ignored cleanly.
+        final second = await vm.analizarImagen(
+          imagen: sample,
+          alacenaUsuario: const [],
+        );
+        expect(second, isFalse);
+        expect(repo.scanCalls, 1);
+
+        completer.complete(
+          const PlatoDetectado(
+            id: 'plato_sample',
+            nombreSugerido: 'Chicken & Avocado Bowl',
+            ingredientes: [],
+          ),
+        );
+        expect(await first, isTrue);
+        expect(vm.state, isA<ScannerSuccess>());
+        expect((vm.state as ScannerSuccess).imagen, sample);
+      },
+    );
   });
 }
