@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/configuracion_nutricional.dart';
@@ -55,7 +56,7 @@ class ToleranciaObjetivoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RANGO DE TOLERANCIA',
+                      context.l10n.toleranceRangeTitle,
                       style: AppTextStyles.title(
                         size: 13,
                         weight: FontWeight.w800,
@@ -63,7 +64,7 @@ class ToleranciaObjetivoCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Margen de éxito para completar tu racha diaria',
+                      context.l10n.toleranceRangeSubtitle,
                       style: AppTextStyles.body(
                         size: 11,
                         color: Colors.white60,
@@ -91,7 +92,7 @@ class ToleranciaObjetivoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'VENTANA VÁLIDA',
+                      context.l10n.toleranceValidWindow,
                       style: AppTextStyles.body(
                         size: 10,
                         weight: FontWeight.w800,
@@ -139,8 +140,8 @@ class ToleranciaObjetivoCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildSelectorMargen(
-                  titulo: 'Límite Inferior (-)',
-                  subtitulo: 'Mínimo requerido',
+                  titulo: context.l10n.toleranceLowerLimit,
+                  subtitulo: context.l10n.toleranceLowerMin,
                   valorLabel: config.toleranciaInferiorLabel,
                   onRestar: () => onCambiarInferior(-0.02),
                   onSumar: () => onCambiarInferior(0.02),
@@ -149,8 +150,8 @@ class ToleranciaObjetivoCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _buildSelectorMargen(
-                  titulo: 'Límite Superior (+)',
-                  subtitulo: 'Máximo admitido',
+                  titulo: context.l10n.toleranceUpperLimit,
+                  subtitulo: context.l10n.toleranceUpperMax,
                   valorLabel: config.toleranciaSuperiorLabel,
                   onRestar: () => onCambiarSuperior(-0.02),
                   onSumar: () => onCambiarSuperior(0.02),

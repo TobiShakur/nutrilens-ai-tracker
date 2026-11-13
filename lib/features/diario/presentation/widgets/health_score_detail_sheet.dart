@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../viewmodels/health_score_eval_state.dart';
 
 /// Shared interactive modal sheet displaying AI Health Score calculation,
@@ -98,7 +100,7 @@ class _HealthScoreDetailSheetState extends State<HealthScoreDetailSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Health Score',
+                            context.l10n.healthScoreTitle,
                             style: AppTextStyles.title(
                               size: 17,
                               weight: FontWeight.w900,
@@ -107,7 +109,7 @@ class _HealthScoreDetailSheetState extends State<HealthScoreDetailSheet> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Evaluación según ingredientes y porciones',
+                            context.l10n.healthScoreSubtitle,
                             style: AppTextStyles.body(
                               size: 12,
                               weight: FontWeight.w600,
@@ -122,7 +124,7 @@ class _HealthScoreDetailSheetState extends State<HealthScoreDetailSheet> {
                       width: 44,
                       height: 44,
                       child: IconButton(
-                        tooltip: 'Cerrar',
+                        tooltip: context.l10n.close,
                         icon: const Icon(
                           Icons.close_rounded,
                           size: 20,
@@ -172,7 +174,7 @@ class _HealthScoreDetailSheetState extends State<HealthScoreDetailSheet> {
       return _ErrorBody(
         key: ValueKey('hs_error_${evalState.type.name}'),
         previousScore: snapshot.healthScore,
-        message: evalState.message,
+        message: localizedHealthScoreError(evalState, context.l10n),
         hasIngredients: snapshot.hasIngredients,
         onRetry: widget.onEvaluate,
         onClose: () => Navigator.pop(context),
@@ -234,7 +236,7 @@ class _LoadingBody extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Calculando puntaje...',
+              context.l10n.healthScoreCalculating,
               textAlign: TextAlign.center,
               style: AppTextStyles.title(
                 size: 15,
@@ -244,7 +246,7 @@ class _LoadingBody extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Analizando ingredientes, cantidades y perfil nutricional',
+              context.l10n.healthScoreAnalyzingIngredients,
               textAlign: TextAlign.center,
               style: AppTextStyles.body(
                 size: 12.5,
@@ -280,7 +282,7 @@ class _EmptyIngredientsBody extends StatelessWidget {
               border: Border.all(color: AppColors.borderLight),
             ),
             child: Text(
-              'Agregá al menos un ingrediente para calcular el Health Score.',
+              context.l10n.healthScoreNoIngredientsHint,
               style: AppTextStyles.body(
                 size: 13.5,
                 weight: FontWeight.w500,
@@ -304,7 +306,7 @@ class _EmptyIngredientsBody extends StatelessWidget {
                       ),
                     ),
                     onPressed: onClose,
-                    child: const Text('Cerrar'),
+                    child: Text(context.l10n.close),
                   ),
                 ),
               ),
@@ -326,7 +328,7 @@ class _EmptyIngredientsBody extends StatelessWidget {
                     ),
                     onPressed: null,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Calcular puntaje'),
+                    label: Text(context.l10n.healthScoreCalculateBtn),
                   ),
                 ),
               ),
@@ -356,11 +358,11 @@ class _ScoredBody extends StatelessWidget {
     required this.onClose,
   });
 
-  String _tierLabel(int value) {
-    if (value >= 85) return 'Perfil nutricional excelente';
-    if (value >= 70) return 'Buen balance nutricional';
-    if (value >= 50) return 'Balance moderado';
-    return 'Perfil nutricional bajo';
+  String _tierLabel(int value, AppLocalizations l10n) {
+    if (value >= 85) return l10n.healthScoreTierExcellent;
+    if (value >= 70) return l10n.healthScoreTierGood;
+    if (value >= 50) return l10n.healthScoreTierModerate;
+    return l10n.healthScoreTierLow;
   }
 
   Color _ringColor(int value) {
@@ -436,7 +438,7 @@ class _ScoredBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _tierLabel(score),
+                      _tierLabel(score, context.l10n),
                       style: AppTextStyles.title(
                         size: 15.5,
                         weight: FontWeight.w800,
@@ -446,10 +448,10 @@ class _ScoredBody extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       isStale
-                          ? 'Modificado desde el último cálculo'
+                          ? context.l10n.healthScoreStatusStale
                           : (hasExplanation
-                                ? 'Evaluado sobre los ingredientes actuales'
-                                : 'Sin detalle guardado para esta comida'),
+                                ? context.l10n.healthScoreStatusFresh
+                                : context.l10n.healthScoreStatusEmpty),
                       style: AppTextStyles.body(
                         size: 12,
                         weight: FontWeight.w600,
@@ -482,7 +484,7 @@ class _ScoredBody extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Editaste ingredientes o gramos. Recalculá para actualizar el puntaje.',
+                      context.l10n.healthScoreStaleHint,
                       style: AppTextStyles.body(
                         size: 12,
                         weight: FontWeight.w700,
@@ -505,7 +507,7 @@ class _ScoredBody extends StatelessWidget {
             child: Text(
               hasExplanation
                   ? trimmedReason
-                  : 'Todavía no hay una explicación generada. Tocá "Recalcular puntaje" para obtener el análisis de tus ingredientes.',
+                  : context.l10n.healthScoreNoExplanationHint,
               style: AppTextStyles.body(
                 size: 13.5,
                 weight: FontWeight.w500,
@@ -532,7 +534,7 @@ class _ScoredBody extends StatelessWidget {
                         ),
                       ),
                       onPressed: onClose,
-                      child: const Text('Cerrar'),
+                      child: Text(context.l10n.close),
                     ),
                   ),
                 ),
@@ -554,7 +556,7 @@ class _ScoredBody extends StatelessWidget {
                       ),
                       onPressed: hasIngredients ? () => onEvaluate() : null,
                       icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text('Recalcular puntaje'),
+                      label: Text(context.l10n.healthScoreRecalculateFullBtn),
                     ),
                   ),
                 ),
@@ -579,7 +581,7 @@ class _ScoredBody extends StatelessWidget {
                       ),
                       onPressed: hasIngredients ? () => onEvaluate() : null,
                       icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text('Recalcular'),
+                      label: Text(context.l10n.healthScoreRecalculateBtn),
                     ),
                   ),
                 ),
@@ -597,7 +599,7 @@ class _ScoredBody extends StatelessWidget {
                         ),
                       ),
                       onPressed: onClose,
-                      child: const Text('Entendido'),
+                      child: Text(context.l10n.understood),
                     ),
                   ),
                 ),
@@ -627,9 +629,10 @@ class _ErrorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final contextLabel = previousScore != null
-        ? 'Puntaje actual conservado: $previousScore/100'
-        : 'Puntaje actual: ?/100';
+        ? l10n.healthScorePreservedScore(previousScore!)
+        : l10n.healthScoreCurrentUnknown;
 
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 164),
@@ -669,7 +672,7 @@ class _ErrorBody extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'No se pudo calcular el Health Score',
+                        l10n.healthScoreErrorTitle,
                         style: AppTextStyles.body(
                           size: 13.5,
                           weight: FontWeight.w800,
@@ -707,7 +710,7 @@ class _ErrorBody extends StatelessWidget {
                       ),
                     ),
                     onPressed: onClose,
-                    child: const Text('Cerrar'),
+                    child: Text(l10n.close),
                   ),
                 ),
               ),
@@ -729,7 +732,7 @@ class _ErrorBody extends StatelessWidget {
                     ),
                     onPressed: hasIngredients ? () => onRetry() : null,
                     icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Reintentar'),
+                    label: Text(l10n.retry),
                   ),
                 ),
               ),

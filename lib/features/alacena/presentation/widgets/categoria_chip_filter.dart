@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/categoria_alacena.dart';
@@ -21,6 +22,7 @@ class CategoriaChipFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final total = categorias.length + (onAddCustom != null ? 1 : 0);
 
     return SizedBox(
@@ -57,7 +59,7 @@ class CategoriaChipFilter extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Agregar',
+                      l10n.add,
                       style: AppTextStyles.body(
                         size: 12,
                         weight: FontWeight.w700,
@@ -106,7 +108,7 @@ class CategoriaChipFilter extends StatelessWidget {
                   Text(cat.emoji, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 6),
                   Text(
-                    cat.label,
+                    localizedCategoriaLabel(cat, l10n),
                     style: AppTextStyles.body(
                       size: 12.5,
                       weight: esActivo ? FontWeight.w800 : FontWeight.w600,

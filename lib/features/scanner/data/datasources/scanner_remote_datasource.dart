@@ -8,9 +8,11 @@ abstract class ScannerRemoteDataSource {
   Future<PlatoDetectadoModel> analizarFotoPlato({
     required ImagenPlato imagen,
     required List<String> nombresAlacena,
+    String languageCode = 'es',
   });
 
   Future<MealHealthEvaluationModel> evaluarHealthScore({
     required MealHealthEvaluationInput input,
+    String languageCode = 'es',
   });
 }

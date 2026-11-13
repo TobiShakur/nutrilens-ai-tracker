@@ -15,8 +15,9 @@ class _SpyMealHealthRepository implements MealHealthRepository {
 
   @override
   Future<MealHealthResult> evaluateMealHealth(
-    MealHealthEvaluationInput input,
-  ) async {
+    MealHealthEvaluationInput input, {
+    String languageCode = 'es',
+  }) async {
     callCount++;
     lastInput = input;
     return const MealHealthSuccess(
@@ -39,6 +40,7 @@ class _StubRemoteDataSource implements ScannerRemoteDataSource {
   Future<PlatoDetectadoModel> analizarFotoPlato({
     required ImagenPlato imagen,
     required List<String> nombresAlacena,
+    String languageCode = 'es',
   }) {
     throw UnimplementedError();
   }
@@ -46,6 +48,7 @@ class _StubRemoteDataSource implements ScannerRemoteDataSource {
   @override
   Future<MealHealthEvaluationModel> evaluarHealthScore({
     required MealHealthEvaluationInput input,
+    String languageCode = 'es',
   }) async {
     if (errorToThrow != null) {
       throw errorToThrow!;

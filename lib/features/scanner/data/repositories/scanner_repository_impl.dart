@@ -23,10 +23,12 @@ class ScannerRepositoryImpl implements ScannerRepository {
     required ImagenPlato imagen,
     required bool preferirAlacena,
     required List<IngredienteAlacena> alacenaUsuario,
+    String languageCode = 'es',
   }) async {
     final model = await _remoteDataSource.analizarFotoPlato(
       imagen: imagen,
       nombresAlacena: alacenaUsuario.map((a) => a.nombre).toList(),
+      languageCode: languageCode,
     );
 
     final rawIngredients = model.ingredientes

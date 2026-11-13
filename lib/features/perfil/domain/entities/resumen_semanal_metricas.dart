@@ -28,6 +28,8 @@ class TopIngredienteMacro {
 class ResumenSemanalMetricas {
   final String semanaTitulo;
   final int offset;
+  final DateTime? lunesSemana;
+  final DateTime? domingoSemana;
   final int rachaActualDias;
   final int diasCumplidos;
   final int totalDiasRegistrados;
@@ -41,6 +43,8 @@ class ResumenSemanalMetricas {
   const ResumenSemanalMetricas({
     required this.semanaTitulo,
     required this.offset,
+    this.lunesSemana,
+    this.domingoSemana,
     required this.rachaActualDias,
     required this.diasCumplidos,
     required this.totalDiasRegistrados,

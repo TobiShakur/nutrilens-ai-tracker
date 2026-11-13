@@ -166,7 +166,7 @@ class EditarComidaViewModel extends ChangeNotifier {
 
   /// Evaluates or refreshes the draft meal's Health Score without committing to
   /// [DiarioViewModel] until the user confirms saving.
-  Future<bool> evaluarHealthScore() async {
+  Future<bool> evaluarHealthScore({String languageCode = 'es'}) async {
     if (_disposed ||
         _healthScoreEvalState is HealthScoreEvaluating ||
         _ingredientes.isEmpty) {
@@ -179,7 +179,10 @@ class EditarComidaViewModel extends ChangeNotifier {
     _healthScoreEvalState = const HealthScoreEvaluating();
     _notifySafe();
 
-    final result = await _evaluateMealHealthUseCase(input);
+    final result = await _evaluateMealHealthUseCase(
+      input,
+      languageCode: languageCode,
+    );
     if (_disposed) return false;
 
     final latestFingerprint = _buildEvaluationInput().computeFingerprint();

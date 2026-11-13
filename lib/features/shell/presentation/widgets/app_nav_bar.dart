@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
@@ -18,6 +19,7 @@ class AppNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     return SafeArea(
@@ -55,7 +57,7 @@ class AppNavBar extends StatelessWidget {
                         Expanded(
                           child: _NavTabItem(
                             icon: Icons.cottage_rounded,
-                            label: 'Inicio',
+                            label: l10n.navHome,
                             isActive: selectedIndex == 0,
                             reduceMotion: reduceMotion,
                             onTap: () {
@@ -67,7 +69,7 @@ class AppNavBar extends StatelessWidget {
                         Expanded(
                           child: _NavTabItem(
                             icon: Icons.inventory_2_rounded,
-                            label: 'Alacena',
+                            label: l10n.navPantry,
                             isActive: selectedIndex == 1,
                             reduceMotion: reduceMotion,
                             onTap: () {
@@ -79,7 +81,7 @@ class AppNavBar extends StatelessWidget {
                         Expanded(
                           child: _NavTabItem(
                             icon: Icons.person_rounded,
-                            label: 'Perfil',
+                            label: l10n.navProfile,
                             isActive: selectedIndex == 2,
                             reduceMotion: reduceMotion,
                             onTap: () {
@@ -189,15 +191,16 @@ class _ScannerFabButtonState extends State<_ScannerFabButton> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final duration = widget.reduceMotion
         ? Duration.zero
         : Duration(milliseconds: _pressed ? 120 : 180);
 
     return Semantics(
       button: true,
-      label: 'Escanear plato o cargar comida',
+      label: l10n.navScanMealSemantics,
       child: Tooltip(
-        message: 'Escanear plato',
+        message: l10n.navScanMealTooltip,
         excludeFromSemantics: true,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,

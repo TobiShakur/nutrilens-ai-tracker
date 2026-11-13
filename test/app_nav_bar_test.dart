@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nutrilens_provider/features/shell/presentation/widgets/app_nav_bar.dart';
+import 'package:nutrilens_provider/l10n/app_localizations.dart';
 
 void main() {
   testWidgets(
@@ -11,6 +12,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('es'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: Scaffold(
             bottomNavigationBar: AppNavBar(
               selectedIndex: 0,

@@ -1,0 +1,673 @@
+{
+  "@@locale": "es",
+  "appTitle": "NutriLens AI",
+  "navHome": "Inicio",
+  "navPantry": "Alacena",
+  "navProfile": "Perfil",
+  "navScanMealSemantics": "Escanear plato o cargar comida",
+  "navScanMealTooltip": "Escanear plato",
+  "cancel": "Cancelar",
+  "save": "Guardar",
+  "saveChanges": "Guardar cambios",
+  "edit": "Modificar",
+  "delete": "Eliminar",
+  "remove": "Quitar",
+  "close": "Cerrar",
+  "retry": "Reintentar",
+  "apply": "Aplicar",
+  "confirm": "Confirmar",
+  "create": "Crear",
+  "choose": "Elegir",
+  "add": "Agregar",
+  "understood": "Entendido",
+  "gramsUnit": "gramos",
+  "gramsTotal": "{grams}g total",
+  "@gramsTotal": {
+    "placeholders": {
+      "grams": {
+        "type": "int"
+      }
+    }
+  },
+  "kcalUnit": "kcal",
+  "pantryTag": "Alacena",
+  "noBrand": "sin marca",
+  "language": "Idioma",
+  "languageSpanish": "Español",
+  "languageEnglish": "English",
+  "selectLanguageTitle": "Elegir idioma",
+  "selectLanguageSubtitle": "La app y el análisis con IA responderán en el idioma elegido.",
+  "macroProtein": "Proteínas",
+  "macroCarbs": "Carbos",
+  "macroFat": "Grasas",
+  "macroProteinUpper": "PROTEÍNAS",
+  "macroCarbsUpper": "CARBOHIDRATOS",
+  "macroFatUpper": "GRASAS",
+  "macroHealthyFatUpper": "GRASAS SALUDABLES",
+  "macroProteinShort": "Prot",
+  "macroCarbsShort": "Carbos",
+  "macroFatShort": "Grasas",
+  "mealTypeBreakfast": "Desayuno",
+  "mealTypeLunch": "Almuerzo",
+  "mealTypeSnackAfternoon": "Merienda",
+  "mealTypeDinner": "Cena",
+  "mealTypeSnack": "Snack",
+  "mealTypeGeneric": "Comida",
+  "categoryAll": "Todos",
+  "categoryProteins": "Proteínas",
+  "categoryCarbs": "Carbos",
+  "categoryDairy": "Lácteos",
+  "categoryFats": "Grasas",
+  "categoryVegetables": "Verduras / Frutas",
+  "categoryOthers": "Otros / Especias",
+  "today": "Hoy",
+  "weekdaySun": "Do {day}",
+  "@weekdaySun": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdayMon": "Lu {day}",
+  "@weekdayMon": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdayTue": "Ma {day}",
+  "@weekdayTue": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdayWed": "Mi {day}",
+  "@weekdayWed": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdayThu": "Ju {day}",
+  "@weekdayThu": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdayFri": "Vi {day}",
+  "@weekdayFri": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdaySat": "Sa {day}",
+  "@weekdaySat": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "monthJan": "Ene",
+  "monthFeb": "Feb",
+  "monthMar": "Mar",
+  "monthApr": "Abr",
+  "monthMay": "May",
+  "monthJun": "Jun",
+  "monthJul": "Jul",
+  "monthAug": "Ago",
+  "monthSep": "Sep",
+  "monthOct": "Oct",
+  "monthNov": "Nov",
+  "monthDec": "Dic",
+  "greetingGoodDay": "Buen día,",
+  "streakNone": "Sin racha",
+  "streakOneDay": "1 día de racha",
+  "streakManyDays": "{days} días de racha",
+  "@streakManyDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "mealsCountLabel": "COMIDAS · {count}",
+  "@mealsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noMealsThisDay": "Todavía no hay comidas este día",
+  "noMealsThisDayHint": "Tocá el botón de escanear para ver cómo se actualizan tus números.",
+  "calorieTargetTotal": "Meta Total",
+  "calorieCriticalExcess": "¡Exceso Crítico!",
+  "calorieExcess": "¡Exceso!",
+  "calorieCurrent": "Actuales",
+  "calorieExtras": "Extras",
+  "calorieRemaining": "Restantes",
+  "deleteMealTitle": "¿Eliminar comida?",
+  "deleteMealMessage": "Se eliminará \"{mealName}\" de tus comidas.",
+  "@deleteMealMessage": {
+    "placeholders": {
+      "mealName": {
+        "type": "String"
+      }
+    }
+  },
+  "mealTimeLabel": "Hora: {time} hs",
+  "@mealTimeLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "mealEnergyContribution": "Aporte energético",
+  "mealTargetKcal": "Meta: {kcal} kcal",
+  "@mealTargetKcal": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "mealIngredientsCount": "Ingredientes ({count})",
+  "@mealIngredientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editMealTitle": "Modificar comida",
+  "editMealSubtitle": "Ajustá ingredientes, porciones en gramos y macros.",
+  "editMealNoIngredients": "No hay ingredientes en esta comida",
+  "removeIngredientTitle": "¿Quitar ingrediente?",
+  "removeIngredientMessage": "Se quitará \"{name}\" de esta comida.",
+  "@removeIngredientMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addIngredientFromPantry": "Agregar ingrediente desde Mi Alacena",
+  "recalculatedTotal": "TOTAL RECALCULADO",
+  "mealUpdatedSnackbar": "Comida modificada ({count} ingredientes · {kcal} kcal)",
+  "@mealUpdatedSnackbar": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "gramsAmountTitle": "Cantidad en gramos",
+  "healthScoreTitle": "Health Score",
+  "healthScoreSubtitle": "Evaluación según ingredientes y porciones",
+  "healthScoreBannerNoRecords": "Todavía no registraste comidas hoy. Sumá un plato para ver tu puntaje nutricional.",
+  "healthScoreBannerExcellent": "¡Excelente nutrición hoy! Tus elecciones de comida están súper balanceadas.",
+  "healthScoreBannerGood": "Muy buena calidad nutricional en tu día, seguí sumando comidas frescas.",
+  "healthScoreBannerModerate": "Buen camino nutricional; podés sumar más fibra o proteína magra hoy.",
+  "healthScoreBannerLow": "Podés equilibrar tus próximas comidas con alimentos menos procesados.",
+  "healthScoreBadgeCalculating": "Calculando",
+  "healthScoreSemanticsCalculating": "Calculando puntaje de salud.",
+  "healthScoreSemanticsError": "Error al calcular puntaje de salud, {score} de 100.",
+  "@healthScoreSemanticsError": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "healthScoreSemanticsUnscored": "Puntaje de salud sin calcular, ? de 100. Tocá para calcular con IA.",
+  "healthScoreSemanticsStale": "Puntaje de salud desactualizado, {score} de 100. Tocá para recalcular según tus cambios.",
+  "@healthScoreSemanticsStale": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "healthScoreSemanticsFresh": "Puntaje de salud {score} de 100. Tocá para ver la explicación o recalcular.",
+  "@healthScoreSemanticsFresh": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "healthScoreTierExcellent": "Calidad nutricional excelente",
+  "healthScoreTierGood": "Buen balance nutricional",
+  "healthScoreTierModerate": "Balance moderado",
+  "healthScoreTierLow": "Perfil nutricional bajo",
+  "healthScoreStatusStale": "Modificado desde el último cálculo",
+  "healthScoreStatusFresh": "Evaluado sobre los ingredientes actuales",
+  "healthScoreStatusEmpty": "Sin detalle guardado para esta comida",
+  "healthScoreCalculating": "Calculando puntaje...",
+  "healthScoreAnalyzingIngredients": "Analizando ingredientes...",
+  "healthScoreNoIngredientsHint": "Agregá al menos un ingrediente para evaluar la calidad nutricional de esta comida.",
+  "healthScoreCalculateBtn": "Calcular puntaje",
+  "healthScoreRecalculateFullBtn": "Recalcular puntaje",
+  "healthScoreRecalculateBtn": "Recalcular",
+  "healthScoreStaleHint": "Editaste ingredientes o gramos. Recalculá para actualizar el puntaje.",
+  "healthScoreNoExplanationHint": "Todavía no hay una explicación generada. Tocá \"Recalcular puntaje\" para obtener el análisis de tus ingredientes.",
+  "healthScorePreservedScore": "Puntaje actual conservado: {score}/100",
+  "@healthScorePreservedScore": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "healthScoreCurrentUnknown": "Puntaje actual: ?/100",
+  "healthScoreErrorTitle": "No se pudo calcular el Health Score",
+  "healthScoreErrorMissingKey": "La evaluación con IA requiere configurar GEMINI_API_KEY en este entorno.",
+  "healthScoreErrorNetwork": "Error de conexión. Verificá tu acceso a internet e intentá nuevamente.",
+  "healthScoreErrorTimeout": "La evaluación tardó demasiado. Intentá nuevamente en unos segundos.",
+  "healthScoreErrorRateLimit": "Alcanzamos el límite temporal de consultas. Esperá un momento e intentá de nuevo.",
+  "healthScoreErrorUnavailable": "El servicio de evaluación no está disponible en este momento. Probá más tarde.",
+  "healthScoreErrorInvalidResponse": "No pudimos interpretar la evaluación nutricional. Intentá nuevamente.",
+  "healthScoreErrorNoIngredients": "Agregá al menos un ingrediente para calcular el Health Score.",
+  "healthScoreErrorGeneric": "No pudimos completar la evaluación nutricional. Intentá nuevamente.",
+  "scannerTitle": "Escanear Plato",
+  "scannerCloseSemantics": "Cerrar escáner",
+  "scannerCloseTooltip": "Cerrar",
+  "scannerFlashOff": "Apagar flash",
+  "scannerFlashOn": "Encender flash",
+  "scannerGallery": "Fototeca",
+  "scannerGallerySemantics": "Elegir foto de fototeca",
+  "scannerManual": "Manual",
+  "scannerManualSemantics": "Armar comida manual",
+  "scannerRetakeSemantics": "Retomar foto",
+  "scannerRetake": "Retomar",
+  "scannerCapturing": "Abriendo cámara...",
+  "scannerAnalyzing": "Analizando nutrientes...",
+  "scannerTakingSeconds": "Esto toma unos segundos",
+  "scannerErrorDismissSemantics": "Descartar error",
+  "scannerErrorDismissTooltip": "Cerrar aviso",
+  "scannerPreferPantry": "Usar ingredientes de mi alacena",
+  "scannerCaptureSemantics": "Escanear plato con cámara",
+  "cameraUnavailableTitle": "Cámara en vivo no disponible",
+  "cameraUnavailableSubtitle": "Usá la cámara del dispositivo, elegí de tu fototeca o armá tu comida manual.",
+  "brandConflictTitle": "Elegí la marca",
+  "brandConflictMessage": "Detectamos varias opciones en tu alacena para \"{genericName}\". ¿Cuál usaste?",
+  "@brandConflictMessage": {
+    "placeholders": {
+      "genericName": {
+        "type": "String"
+      }
+    }
+  },
+  "brandConflictOptionMacros": "{kcal} kcal por {portion} · P {protein}g · C {carbs}g · G {fat}g",
+  "@brandConflictOptionMacros": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      },
+      "portion": {
+        "type": "String"
+      },
+      "protein": {
+        "type": "int"
+      },
+      "carbs": {
+        "type": "int"
+      },
+      "fat": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewManualBuildTag": "Armado manual",
+  "reviewChangeNameTooltip": "Cambiar nombre",
+  "reviewMealNameTitle": "Nombre de la comida",
+  "reviewMealNameHint": "Ej: Almuerzo liviano, Bowl post entreno",
+  "reviewManualTotal": "TOTAL DE LA COMIDA",
+  "reviewDetectedTotal": "TOTAL DETECTADO",
+  "reviewIngredientsCount": "Ingredientes ({count})",
+  "@reviewIngredientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewDetectedIngredientsCount": "Ingredientes detectados ({count})",
+  "@reviewDetectedIngredientsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewSwipeToRemove": "Deslizá para quitar",
+  "reviewAddMealBtn": "Agregar comida",
+  "reviewNoIngredientsTitle": "Todavía no agregaste ingredientes",
+  "reviewNoIngredientsSubtitle": "Tocá \"Agregar ingrediente desde Mi Alacena\" para armar tu comida.",
+  "reviewMealAddedSnackbar": "¡{title} agregada! (+{kcal} kcal)",
+  "@reviewMealAddedSnackbar": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewDefaultMealTitle": "Comida {number}",
+  "@reviewDefaultMealTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "scannerErrorMissingKey": "La función con IA requiere configurar GEMINI_API_KEY en este entorno.",
+  "scannerErrorMissingImage": "No se recibió ninguna imagen para analizar.",
+  "scannerErrorEmptyImage": "La imagen seleccionada está vacía.",
+  "scannerErrorTooLarge": "La imagen supera el máximo permitido de 15 MB.",
+  "scannerErrorUnsupportedFormat": "Formato de imagen no soportado. Usá JPG, PNG, WEBP o HEIC.",
+  "scannerErrorInvalidImage": "La imagen seleccionada no es válida.",
+  "scannerErrorCameraPerm": "Necesitamos permiso de cámara para escanear el plato.",
+  "scannerErrorGalleryPerm": "Necesitamos permiso de galería para elegir una foto.",
+  "scannerErrorNetwork": "Error de conexión. Verificá tu acceso a internet e intentá nuevamente.",
+  "scannerErrorTimeout": "El análisis tardó demasiado. Intentá nuevamente en unos segundos.",
+  "scannerErrorRateLimit": "Alcanzamos el límite temporal de consultas. Esperá un momento e intentá de nuevo.",
+  "scannerErrorUnavailable": "El servicio de análisis no está disponible en este momento. Probá más tarde.",
+  "scannerErrorInvalidResponse": "No pudimos interpretar la respuesta de la IA. Intentá con otra foto.",
+  "scannerErrorNoFood": "No pudimos reconocer alimentos en la foto. Probá más de cerca o con mejor luz.",
+  "scannerErrorEmptyIngredients": "Agregá al menos un ingrediente para calcular el Health Score.",
+  "scannerErrorUnknown": "No pudimos procesar la comida. Intentá nuevamente.",
+  "pantryTitle": "Mi Alacena",
+  "pantryActiveCount": "{count} ingredientes activos",
+  "@pantryActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pantrySearchHint": "Buscar alimento o marca...",
+  "pantryAddSpecific": "Sumar \"{query}\" a tu alacena",
+  "@pantryAddSpecific": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "pantryAddNew": "Agregar nuevo ingrediente",
+  "pantryAddSubtitle": "Tocá para cargar porción o escanear",
+  "pantryInfoBanner": "La IA prioriza estos ingredientes al registrar tus comidas con foto, para calcular calorías y macros exactas.",
+  "pantryEditCatTitle": "Editar nombre e ícono",
+  "pantryDeleteCatTitle": "Eliminar categoría",
+  "pantryDeleteCatSubtitle": "Los ingredientes pasarán a \"Otros\"",
+  "pantryDeleteCatConfirmTitle": "¿Eliminar \"{categoryName}\"?",
+  "@pantryDeleteCatConfirmTitle": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+  "pantryDeleteCatConfirmMsg": "Esta categoría se quitará de tus filtros y los alimentos asociados se moverán a la categoría \"Otros\".",
+  "pantrySelectCatTitle": "SELECCIONAR CATEGORÍA",
+  "pantryNewCatBtn": "Nueva categoría",
+  "pantryEditIngredient": "MODIFICAR INGREDIENTE",
+  "pantryNewIngredient": "NUEVO INGREDIENTE",
+  "pantryEditIngredientSub": "Actualizá los valores de este alimento.",
+  "pantryNewIngredientSub": "Cargá los datos según tu porción de paquete.",
+  "pantryProductLoaded": "Producto cargado",
+  "pantryIngredientUpdated": "Modificado: {name} ({portion})",
+  "@pantryIngredientUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "portion": {
+        "type": "String"
+      }
+    }
+  },
+  "pantryIngredientAdded": "Agregado: {name} ({portion})",
+  "@pantryIngredientAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "portion": {
+        "type": "String"
+      }
+    }
+  },
+  "pantryFieldNameLabel": "Nombre del alimento *",
+  "pantryFieldNameHint": "Ej: Pan Integral, Yogur Griego, Galletitas",
+  "pantryFieldBrandLabel": "Marca (opcional)",
+  "pantryFieldBrandHint": "Ej: Fargo, La Serenísima",
+  "pantryFieldPortionLabel": "Porción (g) *",
+  "pantryCategoryLabel": "Categoría Nutricional",
+  "pantryNutritionValuesTitle": "Valores Nutricionales de la Porción",
+  "pantryFieldCaloriesLabel": "Calorías *",
+  "pantrySaveIngredientBtn": "Guardar ingrediente",
+  "pantryErrEmptyName": "El nombre del ingrediente es obligatorio.",
+  "pantryErrInvalidCat": "Seleccioná una categoría nutricional válida.",
+  "pantryErrNonPositiveGrams": "El tamaño de porción debe ser mayor a 0 gramos.",
+  "pantryErrNegativeCalories": "Las calorías no pueden ser negativas.",
+  "pantryErrNegativeMacros": "Los macros no pueden tener valores negativos.",
+  "pantryErrNotFound": "No se encontró el ingrediente para modificar.",
+  "catDialogEditTitle": "Editar Categoría",
+  "catDialogNewTitle": "Nueva Categoría",
+  "catDialogNameHint": "Ej: Suplementos, Snacks",
+  "catDialogPickEmoji": "Elegí un ícono de comida:",
+  "deleteIngredientTitle": "¿Eliminar ingrediente?",
+  "deleteIngredientMessage": "Se quitará \"{name}\" de tu alacena.",
+  "@deleteIngredientMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientPortionLabel": "Porción: {portion}",
+  "@ingredientPortionLabel": {
+    "placeholders": {
+      "portion": {
+        "type": "String"
+      }
+    }
+  },
+  "ingredientPortionEnergy": "Energía de la porción",
+  "ingredientPer100g": "Equivalente cada 100g: {kcal} kcal · P {p}g · C {c}g · G {g}g",
+  "@ingredientPer100g": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      },
+      "p": {
+        "type": "int"
+      },
+      "c": {
+        "type": "int"
+      },
+      "g": {
+        "type": "int"
+      }
+    }
+  },
+  "selectPantryTitle": "SELECCIONAR DE ALACENA",
+  "selectPantrySearchHint": "Buscar por nombre o marca...",
+  "selectPantryNotFound": "No encontramos este ingrediente",
+  "selectPantryNotFoundSub": "Podés sumarlo ahora mismo a tu alacena.",
+  "selectPantryCreateBtn": "Crear ingrediente",
+  "selectPantryManualNewBtn": "Nuevo ingrediente manual",
+  "barcodeTitle": "ESCANEAR PRODUCTO",
+  "barcodeSubtitle": "Código de barras o tabla nutricional",
+  "barcodeTabPhoto": "Foto",
+  "barcodeTabCode": "Código de barras",
+  "barcodePhotoTitle": "Sacale una foto al producto",
+  "barcodePhotoSubtitle": "Escaneá el frente del envase o la tabla nutricional para cargar sus datos.",
+  "barcodeTakePhoto": "Sacar foto",
+  "barcodeUploadPhoto": "Subir foto",
+  "barcodeInputHint": "Ingresá el código de barras",
+  "barcodeQuickExamples": "Ejemplos rápidos:",
+  "barcodeLoadingOpening": "Abriendo...",
+  "barcodeLoadingAnalyzing": "Analizando producto...",
+  "barcodeLoadingLookup": "Buscando producto...",
+  "barcodeResultPortion": "Porción",
+  "barcodeResultCalories": "Calorías",
+  "barcodeRescan": "Volver a escanear",
+  "barcodeErrMissingKey": "La función con IA requiere configurar GEMINI_API_KEY en este entorno.",
+  "barcodeErrMissingCode": "Ingresá los números del código de barras.",
+  "barcodeErrInvalidCode": "El código de barras ingresado no es válido.",
+  "barcodeErrEmptyImage": "La imagen seleccionada está vacía.",
+  "barcodeErrTooLarge": "La imagen supera el máximo permitido de 10 MB.",
+  "barcodeErrUnsupportedMime": "Formato de imagen no soportado. Usá JPG, PNG, WEBP o HEIC.",
+  "barcodeErrCameraPerm": "Necesitamos permiso de cámara para escanear la etiqueta.",
+  "barcodeErrGalleryPerm": "Necesitamos permiso de galería para elegir una foto.",
+  "barcodeErrLabelNotFound": "No se pudo detectar un producto legible. Probá enfocando mejor la tabla nutricional o el código.",
+  "barcodeErrProductNotFound": "No encontramos el producto con código {code} en la base de datos.",
+  "@barcodeErrProductNotFound": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "barcodeErrNetwork": "Error de conexión. Verificá tu acceso a internet e intentá nuevamente.",
+  "barcodeErrTimeout": "La consulta tardó demasiado. Intentá nuevamente en unos segundos.",
+  "barcodeErrRateLimit": "Alcanzamos el límite temporal de consultas. Esperá un momento e intentá de nuevo.",
+  "barcodeErrUnavailable": "El servicio de productos no está disponible en este momento. Probá más tarde.",
+  "barcodeErrInvalidResponse": "No pudimos interpretar la respuesta del servicio. Intentá nuevamente.",
+  "barcodeErrUnknown": "No se pudo procesar la solicitud. Intentá nuevamente.",
+  "profileTitle": "MI PERFIL & METAS",
+  "profileSubtitle": "Objetivos y consistencia nutricional",
+  "profileGoalsUpdated": "Metas actualizadas: {kcal} kcal · P {p}g · C {c}g · G {g}g",
+  "@profileGoalsUpdated": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      },
+      "p": {
+        "type": "int"
+      },
+      "c": {
+        "type": "int"
+      },
+      "g": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyGoalsTitle": "METAS DIARIAS",
+  "dailyGoalsKcalPerDay": "kcal / día",
+  "editGoalsTitle": "MODIFICAR METAS DIARIAS",
+  "editGoalsDailyKcal": "Calorías diarias objetivo",
+  "editGoalsUpdateBtn": "Actualizar metas",
+  "toleranceRangeTitle": "RANGO DE TOLERANCIA",
+  "toleranceRangeSubtitle": "Margen de éxito para completar tu racha diaria",
+  "toleranceValidWindow": "VENTANA VÁLIDA",
+  "toleranceLowerLimit": "Límite Inferior (-)",
+  "toleranceLowerMin": "Mínimo requerido",
+  "toleranceUpperLimit": "Límite Superior (+)",
+  "toleranceUpperMax": "Máximo admitido",
+  "statsThisWeekFallback": "Esta semana",
+  "statsWeekCurrent": "Semana actual ({range})",
+  "@statsWeekCurrent": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "statsWeekLast": "Semana pasada ({range})",
+  "@statsWeekLast": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "statsWeekWeeksAgo": "Hace {count} semanas ({range})",
+  "@statsWeekWeeksAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "statsWeekNext": "Semana siguiente ({range})",
+  "@statsWeekNext": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "statsWeekMonToSun": "Lunes a Domingo",
+  "statsStreakTitle": "Racha",
+  "statsStreakDays": "{days} d",
+  "@statsStreakDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "statsComplianceTitle": "Cumplimiento",
+  "statsComplianceDays": "{pct}% ({fulfilled}/{total} días)",
+  "@statsComplianceDays": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "fulfilled": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "statsPantryUsageTitle": "Aprovechamiento de alacena",
+  "statsPantryUsagePct": "{pct}% alacena propia",
+  "@statsPantryUsagePct": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "statsTopFoodsTitle": "TOP ALIMENTOS DE LA SEMANA",
+  "statsTopFoodsSubtitle": "Los que mayor aporte dieron a cada macronutriente",
+  "statsNoMealsPeriod": "Sin comidas registradas en este período.",
+  "statsNoMealsWeek": "No hay comidas registradas para esta semana.",
+  "statsTopContribution": "{grams}g aportados · {count} {count, plural, =1{comida} other{comidas}}",
+  "@statsTopContribution": {
+    "placeholders": {
+      "grams": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

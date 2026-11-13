@@ -4,6 +4,28 @@ import '../../domain/entities/barcode_product_data.dart';
 /// Modos de entrada disponibles en el escáner de productos de alacena.
 enum ModoEscaneoProducto { camara, codigo }
 
+enum BarcodeLoadingStep { openingPicker, analyzingLabel, lookingUpBarcode }
+
+enum BarcodeErrorCode {
+  none,
+  cameraPermission,
+  galleryPermission,
+  emptyImage,
+  tooLargeImage,
+  unsupportedMime,
+  labelNotFound,
+  missingBarcode,
+  invalidBarcode,
+  productNotFound,
+  missingApiKey,
+  network,
+  timeout,
+  rateLimit,
+  serviceUnavailable,
+  invalidResponse,
+  unknown,
+}
+
 /// Categorías cerradas de error mostradas al usuario sin exponer detalles técnicos.
 enum BarcodeErrorTipo {
   permisoDenegado,
@@ -37,15 +59,21 @@ final class BarcodeScannerIdle extends BarcodeScannerState {
 
 final class BarcodeScannerLoading extends BarcodeScannerState {
   final String mensaje;
-  const BarcodeScannerLoading({required this.mensaje});
+  final BarcodeLoadingStep step;
+  const BarcodeScannerLoading({
+    required this.mensaje,
+    this.step = BarcodeLoadingStep.openingPicker,
+  });
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is BarcodeScannerLoading && mensaje == other.mensaje;
+      other is BarcodeScannerLoading &&
+          mensaje == other.mensaje &&
+          step == other.step;
 
   @override
-  int get hashCode => Object.hash(runtimeType, mensaje);
+  int get hashCode => Object.hash(runtimeType, mensaje, step);
 }
 
 final class BarcodeScannerSuccess extends BarcodeScannerState {
@@ -64,15 +92,24 @@ final class BarcodeScannerSuccess extends BarcodeScannerState {
 final class BarcodeScannerError extends BarcodeScannerState {
   final String mensaje;
   final BarcodeErrorTipo tipo;
-  const BarcodeScannerError({required this.mensaje, required this.tipo});
+  final BarcodeErrorCode code;
+  final String? barcode;
+  const BarcodeScannerError({
+    required this.mensaje,
+    required this.tipo,
+    this.code = BarcodeErrorCode.none,
+    this.barcode,
+  });
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is BarcodeScannerError &&
           mensaje == other.mensaje &&
-          tipo == other.tipo;
+          tipo == other.tipo &&
+          code == other.code &&
+          barcode == other.barcode;
 
   @override
-  int get hashCode => Object.hash(runtimeType, mensaje, tipo);
+  int get hashCode => Object.hash(runtimeType, mensaje, tipo, code, barcode);
 }

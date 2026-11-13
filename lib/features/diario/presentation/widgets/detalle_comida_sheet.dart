@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -45,10 +46,12 @@ class DetalleComidaSheet extends StatelessWidget {
     BuildContext context,
     ComidaItem liveComida,
   ) async {
+    final l10n = context.l10n;
+    final mealDisplayName = localizedMealType(liveComida.encabezadoTipo, l10n);
     final confirmado = await ConfirmDeleteDialog.show(
       context,
-      titulo: '¿Eliminar comida?',
-      mensaje: 'Se eliminará "${liveComida.encabezadoTipo}" de tus comidas.',
+      titulo: l10n.deleteMealTitle,
+      mensaje: l10n.deleteMealMessage(mealDisplayName),
     );
     if (confirmado && context.mounted) {
       onDelete();
@@ -61,21 +64,25 @@ class DetalleComidaSheet extends StatelessWidget {
     DiarioViewModel diarioVM,
     String comidaId,
   ) {
+    final lang = context.activeLanguageCode;
     HealthScoreDetailSheet.show(
       context,
       listenable: diarioVM,
       readSnapshot: () => diarioVM.healthScoreSnapshotFor(comidaId),
-      onEvaluate: () => diarioVM.evaluarHealthScoreComida(comidaId),
+      onEvaluate: () =>
+          diarioVM.evaluarHealthScoreComida(comidaId, languageCode: lang),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final diarioVM = _tryWatchDiario(context);
     final liveComida = diarioVM?.buscarComidaPorId(comida.id) ?? comida;
     final evalState =
         diarioVM?.healthScoreStateFor(liveComida.id) ??
         const HealthScoreEvalIdle();
+    final mealDisplayName = localizedMealType(liveComida.encabezadoTipo, l10n);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
@@ -122,7 +129,7 @@ class DetalleComidaSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      liveComida.encabezadoTipo,
+                      mealDisplayName,
                       style: AppTextStyles.title(
                         size: 17,
                         weight: FontWeight.w900,
@@ -145,7 +152,7 @@ class DetalleComidaSheet extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Hora: ${liveComida.hora} hs',
+                            l10n.mealTimeLabel(liveComida.hora),
                             style: AppTextStyles.body(
                               size: 11.5,
                               weight: FontWeight.w700,
@@ -189,7 +196,7 @@ class DetalleComidaSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Aporte energético',
+                      l10n.mealEnergyContribution,
                       style: AppTextStyles.body(
                         size: 12,
                         color: AppColors.textMuted,
@@ -210,7 +217,7 @@ class DetalleComidaSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'kcal',
+                          l10n.kcalUnit,
                           style: AppTextStyles.body(
                             size: 13,
                             weight: FontWeight.w700,
@@ -232,7 +239,7 @@ class DetalleComidaSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Meta: ${liveComida.metaCalorias} kcal',
+                      l10n.mealTargetKcal(liveComida.metaCalorias!),
                       style: AppTextStyles.number(
                         size: 12,
                         weight: FontWeight.w800,
@@ -249,21 +256,21 @@ class DetalleComidaSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: _MacroPill(
-                  label: 'Proteínas',
+                  label: l10n.macroProtein,
                   value: '${liveComida.proteinas.round()}g',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MacroPill(
-                  label: 'Carbos',
+                  label: l10n.macroCarbs,
                   value: '${liveComida.carbohidratos.round()}g',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MacroPill(
-                  label: 'Grasas',
+                  label: l10n.macroFat,
                   value: '${liveComida.grasas.round()}g',
                 ),
               ),
@@ -275,11 +282,15 @@ class DetalleComidaSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Ingredientes (${liveComida.ingredientes.length})',
+                l10n.mealIngredientsCount(liveComida.ingredientes.length),
                 style: AppTextStyles.title(size: 14.5, weight: FontWeight.w800),
               ),
               Text(
-                '${liveComida.ingredientes.fold(0.0, (acc, i) => acc + i.gramos).round()}g total',
+                l10n.gramsTotal(
+                  liveComida.ingredientes
+                      .fold(0.0, (acc, i) => acc + i.gramos)
+                      .round(),
+                ),
                 style: AppTextStyles.body(
                   size: 12,
                   weight: FontWeight.w700,
@@ -404,7 +415,7 @@ class DetalleComidaSheet extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   label: Text(
-                    'Modificar',
+                    l10n.edit,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,
@@ -433,7 +444,7 @@ class DetalleComidaSheet extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.delete_outline_rounded, size: 18),
                   label: Text(
-                    'Eliminar',
+                    l10n.delete,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,

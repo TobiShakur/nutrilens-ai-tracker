@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -18,6 +19,7 @@ class IngredienteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Dismissible(
       key: ValueKey(ingrediente.id),
       direction: DismissDirection.endToStart,
@@ -38,7 +40,7 @@ class IngredienteCard extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Eliminar',
+              l10n.delete,
               style: AppTextStyles.body(
                 size: 13,
                 weight: FontWeight.w700,
@@ -51,8 +53,8 @@ class IngredienteCard extends StatelessWidget {
       confirmDismiss: (_) async {
         return await ConfirmDeleteDialog.show(
           context,
-          titulo: '¿Eliminar ingrediente?',
-          mensaje: 'Se quitará "${ingrediente.nombreConMarca}" de tu alacena.',
+          titulo: l10n.deleteIngredientTitle,
+          mensaje: l10n.deleteIngredientMessage(ingrediente.nombreConMarca),
         );
       },
       onDismissed: (_) => onDelete(),
@@ -109,7 +111,7 @@ class IngredienteCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(7),
                           ),
                           child: Text(
-                            '${ingrediente.calorias} kcal / ${ingrediente.porcionLabel}',
+                            '${ingrediente.calorias} ${l10n.kcalUnit} / ${ingrediente.porcionLabel}',
                             style: AppTextStyles.number(
                               size: 11,
                               weight: FontWeight.w800,
@@ -119,7 +121,7 @@ class IngredienteCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'P ${ingrediente.proteinas.round()}g · C ${ingrediente.carbohidratos.round()}g · G ${ingrediente.grasas.round()}g',
+                            'P ${ingrediente.proteinas.round()}g · C ${ingrediente.carbohidratos.round()}g · ${l10n.macroFatShort[0]} ${ingrediente.grasas.round()}g',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.body(

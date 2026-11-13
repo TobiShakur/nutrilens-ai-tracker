@@ -176,7 +176,10 @@ class DiarioViewModel extends ChangeNotifier {
   }
 
   /// Evaluates or refreshes the AI Health Score for [comidaId] and persists it.
-  Future<bool> evaluarHealthScoreComida(String comidaId) async {
+  Future<bool> evaluarHealthScoreComida(
+    String comidaId, {
+    String languageCode = 'es',
+  }) async {
     if (_disposed || isEvaluatingHealthScore(comidaId)) return false;
 
     final target = _locateMealWithDay(comidaId);
@@ -190,7 +193,10 @@ class DiarioViewModel extends ChangeNotifier {
     _healthScoreStates[comidaId] = const HealthScoreEvaluating();
     _notifySafe();
 
-    final result = await _evaluateMealHealthUseCase(input);
+    final result = await _evaluateMealHealthUseCase(
+      input,
+      languageCode: languageCode,
+    );
     if (_disposed) return false;
 
     final day = _dias[target.dayIndex];

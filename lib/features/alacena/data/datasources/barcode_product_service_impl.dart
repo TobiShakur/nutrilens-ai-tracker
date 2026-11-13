@@ -36,7 +36,10 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
   bool get _tieneGeminiDisponible => _usaProxy || _geminiKey.isNotEmpty;
 
   @override
-  Future<BarcodeProductData?> buscarPorCodigoBarras(String codigo) async {
+  Future<BarcodeProductData?> buscarPorCodigoBarras(
+    String codigo, {
+    String languageCode = 'es',
+  }) async {
     final sanitized = BarcodeValidator.limpiar(codigo);
     if (!BarcodeValidator.esCodigoValido(sanitized)) {
       throw const BarcodeCodigoInvalidoFailure();
@@ -80,7 +83,11 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
       if (decoded is Map<String, dynamic> && decoded['status'] == 1) {
         final product = decoded['product'];
         if (product is Map<String, dynamic>) {
-          return _parsearOpenFoodFacts(product, sanitized);
+          return _parsearOpenFoodFacts(
+            product,
+            sanitized,
+            languageCode: languageCode,
+          );
         }
       }
     } else if (response.statusCode == 429) {
@@ -93,7 +100,7 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
 
     // 2. Fallback opcional con Gemini solo cuando OFF no tiene el producto y hay proxy o clave
     if (_tieneGeminiDisponible) {
-      return _consultarGeminiPorCodigo(sanitized);
+      return _consultarGeminiPorCodigo(sanitized, languageCode: languageCode);
     }
 
     return null;
@@ -103,6 +110,7 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
   Future<BarcodeProductData?> analizarFotoEtiqueta({
     required Uint8List bytes,
     required String mimeType,
+    String languageCode = 'es',
   }) async {
     final falloImagen = BarcodeValidator.validarImagenEtiqueta(bytes, mimeType);
     if (falloImagen != null) {
@@ -115,8 +123,21 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
 
     final mimeNormalizado = BarcodeValidator.normalizarMime(mimeType);
     final base64Image = base64Encode(bytes);
+    final isEnglish = languageCode.toLowerCase() == 'en';
 
-    const prompt = '''
+    final prompt = isEnglish
+        ? '''
+You are a high-precision nutrition and computer vision system.
+Analyze the provided image. It may be a photo of a food product barcode, front of package, or nutrition facts table.
+
+TASKS:
+1. Read the numeric barcode digits if visible or printed on the package.
+2. Identify the exact product name (in English if generic, keeping commercial brand names intact) and main brand.
+3. Extract the recommended serving size in grams or milliliters (e.g., 30, 40, 100). If the table only shows per 100g values, use 100.
+4. Extract or calculate calories (Kcal), protein (g), carbohydrates (g), and fat (g) for that serving size.
+5. Suggest the most fitting category ID ('proteinas', 'carbohidratos', 'lacteos', 'grasas', 'vegetales', 'otros').
+'''
+        : '''
 Sos un sistema de visión artificial y nutrición de máxima precisión.
 Analizá la imagen provista. Puede ser una fotografía de un código de barras de producto alimenticio, el frente del envase/paquete o una tabla de información nutricional.
 
@@ -173,15 +194,28 @@ TAREAS:
 
   BarcodeProductData? _parsearOpenFoodFacts(
     Map<String, dynamic> product,
-    String codigo,
-  ) {
+    String codigo, {
+    String languageCode = 'es',
+  }) {
     final nombreEs = (product['product_name_es'] as String?)?.trim() ?? '';
+    final nombreEn = (product['product_name_en'] as String?)?.trim() ?? '';
     final nombreBase = (product['product_name'] as String?)?.trim() ?? '';
-    final nombre = nombreEs.isNotEmpty
-        ? nombreEs
-        : nombreBase.isNotEmpty
-        ? nombreBase
-        : 'Producto $codigo';
+    final isEnglish = languageCode.toLowerCase() == 'en';
+    final nombre = isEnglish
+        ? (nombreEn.isNotEmpty
+              ? nombreEn
+              : nombreBase.isNotEmpty
+              ? nombreBase
+              : nombreEs.isNotEmpty
+              ? nombreEs
+              : 'Product $codigo')
+        : (nombreEs.isNotEmpty
+              ? nombreEs
+              : nombreBase.isNotEmpty
+              ? nombreBase
+              : nombreEn.isNotEmpty
+              ? nombreEn
+              : 'Producto $codigo');
 
     final marca = (product['brands'] as String?)?.split(',').first.trim() ?? '';
 
@@ -246,11 +280,20 @@ TAREAS:
     );
   }
 
-  Future<BarcodeProductData?> _consultarGeminiPorCodigo(String codigo) async {
+  Future<BarcodeProductData?> _consultarGeminiPorCodigo(
+    String codigo, {
+    String languageCode = 'es',
+  }) async {
     if (!_tieneGeminiDisponible) return null;
 
-    final prompt =
-        '''
+    final isEnglish = languageCode.toLowerCase() == 'en';
+    final prompt = isEnglish
+        ? '''
+The user entered the numeric barcode: "$codigo".
+If you recognize the food or packaged product associated with this EAN/UPC code, identify its product name (in English if generic), brand, standard serving size (in grams), and macros per serving.
+If you are not completely certain, respond with null or an empty object.
+'''
+        : '''
 El usuario introdujo el código de barras numérico: "$codigo".
 Si conocés el alimento o producto de consumo masivo asociado a este código EAN/UPC (con foco en Argentina y Latinoamérica), identificá su nombre comercial, marca, porción estándar (en gramos) y macros por porción.
 Si no lo conocés con absoluta certeza, respondé con null o un objeto vacío.

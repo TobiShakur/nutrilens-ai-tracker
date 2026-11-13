@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/nivel_score.dart';
@@ -21,20 +22,17 @@ class HealthScoreBanner extends StatelessWidget {
     NivelScore.sinRegistros => AppColors.textMuted,
   };
 
-  String get _mensaje => switch (nivel) {
-    NivelScore.excelente => 'Tu día viene con mucha energía real. Seguí así.',
-    NivelScore.bueno => 'Buen ritmo. Cada comida suma y vas por buen camino.',
-    NivelScore.moderado =>
-      'Hay de todo un poco y está bien. Lo que suma es seguir registrando.',
-    NivelScore.bajo =>
-      'Hay días así y no pasa nada. La próxima comida arranca de cero.',
-    NivelScore.sinRegistros =>
-      'Registrá tu primera comida y acá vas a ver cómo viene tu día.',
-  };
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final color = _color;
+    final mensaje = switch (nivel) {
+      NivelScore.excelente => l10n.healthScoreBannerExcellent,
+      NivelScore.bueno => l10n.healthScoreBannerGood,
+      NivelScore.moderado => l10n.healthScoreBannerModerate,
+      NivelScore.bajo => l10n.healthScoreBannerLow,
+      NivelScore.sinRegistros => l10n.healthScoreBannerNoRecords,
+    };
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 2),
@@ -81,7 +79,7 @@ class HealthScoreBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _mensaje,
+                  mensaje,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.body(

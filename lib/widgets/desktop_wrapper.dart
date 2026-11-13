@@ -407,7 +407,7 @@ class _InteractiveDemoCard extends StatelessWidget {
               _StepSpan('Tap the camera button, then choose '),
               _StepSpan('Manual', bold: true),
               _StepSpan(' or '),
-              _StepSpan('Fototeca', bold: true),
+              _StepSpan('Fototeca / Library', bold: true),
               _StepSpan(' (upload photo) to log a meal.'),
             ],
           ),
@@ -429,9 +429,12 @@ class _InteractiveDemoCard extends StatelessWidget {
             spans: [
               _StepSpan('Pantry Barcode: ', bold: true),
               _StepSpan('Open '),
-              _StepSpan('Alacena', bold: true),
+              _StepSpan('Alacena / Pantry', bold: true),
               _StepSpan(' → '),
-              _StepSpan('Agregar nuevo ingrediente', bold: true),
+              _StepSpan(
+                'Agregar nuevo ingrediente / Add new ingredient',
+                bold: true,
+              ),
               _StepSpan(' → barcode icon to scan or type a product.'),
             ],
           ),

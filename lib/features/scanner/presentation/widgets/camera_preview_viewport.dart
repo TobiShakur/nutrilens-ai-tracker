@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/services/camera_preview_controller_impl.dart';
@@ -51,6 +52,7 @@ class _NoCameraFallbackView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ColoredBox(
       color: AppColors.scannerSurfaceDark,
       child: Center(
@@ -74,7 +76,7 @@ class _NoCameraFallbackView extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'Cámara en vivo no disponible',
+                l10n.cameraUnavailableTitle,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.title(
                   size: 15,
@@ -84,7 +86,7 @@ class _NoCameraFallbackView extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Usá la cámara del dispositivo, elegí de tu fototeca o armá tu comida manual.',
+                l10n.cameraUnavailableSubtitle,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

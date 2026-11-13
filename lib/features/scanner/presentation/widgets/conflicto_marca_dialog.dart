@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../alacena/domain/entities/ingrediente_alacena.dart';
@@ -22,6 +23,7 @@ class ConflictoMarcaDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       backgroundColor: AppColors.cardWhite,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
@@ -38,7 +40,7 @@ class ConflictoMarcaDialog extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Elegí la marca',
+                  l10n.brandConflictTitle,
                   style: AppTextStyles.title(
                     size: 16.5,
                     weight: FontWeight.w800,
@@ -49,7 +51,7 @@ class ConflictoMarcaDialog extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Detectamos varias opciones en tu alacena para "${conflicto.nombreGenerico}". ¿Cuál usaste?',
+            l10n.brandConflictMessage(conflicto.nombreGenerico),
             style: AppTextStyles.body(
               size: 12.5,
               color: AppColors.textMuted,
@@ -97,7 +99,13 @@ class ConflictoMarcaDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${opcion.calorias} kcal por ${opcion.porcionLabel} · P ${opcion.proteinas.round()}g · C ${opcion.carbohidratos.round()}g · G ${opcion.grasas.round()}g',
+                            l10n.brandConflictOptionMacros(
+                              opcion.calorias,
+                              opcion.porcionLabel,
+                              opcion.proteinas.round(),
+                              opcion.carbohidratos.round(),
+                              opcion.grasas.round(),
+                            ),
                             style: AppTextStyles.body(
                               size: 11,
                               weight: FontWeight.w600,

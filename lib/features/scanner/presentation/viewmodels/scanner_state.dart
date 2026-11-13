@@ -101,12 +101,30 @@ final class ScannerSuccess extends ScannerState {
   );
 }
 
+enum ScannerErrorDetail {
+  none,
+  missingImage,
+  emptyImage,
+  tooLargeImage,
+  unsupportedFormat,
+  cameraPermission,
+  galleryPermission,
+  emptyIngredients,
+  noFoodDetected,
+}
+
 final class ScannerError extends ScannerState {
   final String message;
   final ScannerErrorType type;
+  final ScannerErrorDetail detail;
   final ImagenPlato? imagen;
 
-  const ScannerError({required this.message, required this.type, this.imagen});
+  const ScannerError({
+    required this.message,
+    required this.type,
+    this.detail = ScannerErrorDetail.none,
+    this.imagen,
+  });
 
   @override
   bool operator ==(Object other) =>
@@ -114,8 +132,9 @@ final class ScannerError extends ScannerState {
       other is ScannerError &&
           message == other.message &&
           type == other.type &&
+          detail == other.detail &&
           imagen == other.imagen;
 
   @override
-  int get hashCode => Object.hash(runtimeType, message, type, imagen);
+  int get hashCode => Object.hash(runtimeType, message, type, detail, imagen);
 }

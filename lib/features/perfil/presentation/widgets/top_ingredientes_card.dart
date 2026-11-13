@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/resumen_semanal_metricas.dart';
@@ -51,14 +52,14 @@ class TopIngredientesCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'TOP ALIMENTOS DE LA SEMANA',
+                      context.l10n.statsTopFoodsTitle,
                       style: AppTextStyles.title(
                         size: 13,
                         weight: FontWeight.w800,
                       ),
                     ),
                     Text(
-                      'Los que mayor aporte dieron a cada macronutriente',
+                      context.l10n.statsTopFoodsSubtitle,
                       style: AppTextStyles.body(
                         size: 11,
                         color: AppColors.textMuted,
@@ -75,21 +76,23 @@ class TopIngredientesCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               alignment: Alignment.center,
               child: Text(
-                'No hay comidas registradas para esta semana.',
+                context.l10n.statsNoMealsWeek,
                 style: AppTextStyles.body(size: 12, color: AppColors.textMuted),
               ),
             )
           else ...[
             if (topProteina != null)
               _buildFilaTop(
-                badgeLabel: 'PROTEÍNAS',
+                context,
+                badgeLabel: context.l10n.macroProteinUpper,
                 badgeColor: const Color(0xFFE57373),
                 item: topProteina!,
               ),
             if (topCarbos != null) ...[
               const SizedBox(height: 10),
               _buildFilaTop(
-                badgeLabel: 'CARBOHIDRATOS',
+                context,
+                badgeLabel: context.l10n.macroCarbsUpper,
                 badgeColor: const Color(0xFFFFB74D),
                 item: topCarbos!,
               ),
@@ -97,7 +100,8 @@ class TopIngredientesCard extends StatelessWidget {
             if (topGrasas != null) ...[
               const SizedBox(height: 10),
               _buildFilaTop(
-                badgeLabel: 'GRASAS SALUDABLES',
+                context,
+                badgeLabel: context.l10n.macroHealthyFatUpper,
                 badgeColor: const Color(0xFF81C784),
                 item: topGrasas!,
               ),
@@ -108,7 +112,8 @@ class TopIngredientesCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFilaTop({
+  Widget _buildFilaTop(
+    BuildContext context, {
     required String badgeLabel,
     required Color badgeColor,
     required TopIngredienteMacro item,
@@ -174,7 +179,10 @@ class TopIngredientesCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  item.resumenAporte,
+                  context.l10n.statsTopContribution(
+                    item.aporteMacroGramos.toStringAsFixed(1),
+                    item.vecesConsumido,
+                  ),
                   style: AppTextStyles.body(
                     size: 11,
                     weight: FontWeight.w600,

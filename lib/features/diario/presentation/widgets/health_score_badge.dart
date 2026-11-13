@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Shared interactive Health Score pill rendered across meal review, feed,
 /// detail, and edit surfaces with a guaranteed 44x44 touch target.
@@ -28,23 +30,24 @@ class HealthScoreBadge extends StatelessWidget {
     return AppColors.scoreLow;
   }
 
-  String _semanticsLabel() {
-    if (isLoading) return 'Calculando puntaje de salud.';
+  String _semanticsLabel(AppLocalizations l10n) {
+    if (isLoading) return l10n.healthScoreSemanticsCalculating;
     if (hasError) {
       final scoreText = healthScore != null ? '$healthScore' : '?';
-      return 'Error al calcular puntaje de salud, $scoreText de 100.';
+      return l10n.healthScoreSemanticsError(scoreText);
     }
     if (healthScore == null) {
-      return 'Puntaje de salud sin calcular, ? de 100. Tocá para calcular con IA.';
+      return l10n.healthScoreSemanticsUnscored;
     }
     if (isStale) {
-      return 'Puntaje de salud desactualizado, $healthScore de 100. Tocá para recalcular según tus cambios.';
+      return l10n.healthScoreSemanticsStale(healthScore!);
     }
-    return 'Puntaje de salud $healthScore de 100. Tocá para ver la explicación o recalcular.';
+    return l10n.healthScoreSemanticsFresh(healthScore!);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final duration = reduceMotion
         ? Duration.zero
@@ -72,7 +75,9 @@ class HealthScoreBadge extends StatelessWidget {
           color: AppColors.forestDark,
         ),
       );
-      labelText = compact ? '${healthScore ?? '?'}/100' : 'Calculando';
+      labelText = compact
+          ? '${healthScore ?? '?'}/100'
+          : l10n.healthScoreBadgeCalculating;
       labelColor = AppColors.forestDark;
       trailing = null;
     } else if (hasError) {
@@ -152,7 +157,7 @@ class HealthScoreBadge extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: !isLoading,
-      label: _semanticsLabel(),
+      label: _semanticsLabel(l10n),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
         child: Material(

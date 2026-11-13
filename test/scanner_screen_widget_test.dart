@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nutrilens_provider/l10n/app_localizations.dart';
 import 'package:nutrilens_provider/features/alacena/data/repositories/alacena_repository_impl.dart';
 import 'package:nutrilens_provider/features/alacena/domain/entities/ingrediente_alacena.dart';
 import 'package:nutrilens_provider/features/alacena/presentation/viewmodels/alacena_viewmodel.dart';
@@ -155,6 +156,7 @@ class _FakeScannerRepository implements ScannerRepository {
     required ImagenPlato imagen,
     required bool preferirAlacena,
     required List<IngredienteAlacena> alacenaUsuario,
+    String languageCode = 'es',
   }) async {
     if (failOnce) {
       failOnce = false;
@@ -192,6 +194,9 @@ void main() {
         ChangeNotifierProvider<DiarioViewModel>.value(value: diarioVM),
       ],
       child: MaterialApp(
+        locale: const Locale('es'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(

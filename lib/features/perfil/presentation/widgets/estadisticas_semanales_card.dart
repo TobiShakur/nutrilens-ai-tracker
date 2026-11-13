@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/resumen_semanal_metricas.dart';
@@ -66,7 +67,9 @@ class EstadisticasSemanalesCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      metricas?.semanaTitulo ?? 'Esta semana',
+                      metricas != null
+                          ? localizedWeekTitle(metricas!, context.l10n)
+                          : context.l10n.statsThisWeekFallback,
                       textAlign: TextAlign.center,
                       style: AppTextStyles.title(
                         size: 13,
@@ -76,7 +79,7 @@ class EstadisticasSemanalesCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Lunes a Domingo',
+                      context.l10n.statsWeekMonToSun,
                       style: AppTextStyles.body(
                         size: 10.5,
                         color: AppColors.pistachio,
@@ -117,14 +120,16 @@ class EstadisticasSemanalesCard extends StatelessWidget {
             children: [
               _buildKpiBox(
                 emoji: '🔥',
-                titulo: 'Racha',
-                valor: '${metricas?.rachaActualDias ?? 0} d',
+                titulo: context.l10n.statsStreakTitle,
+                valor: context.l10n.statsStreakDays(
+                  metricas?.rachaActualDias ?? 0,
+                ),
                 color: const Color(0xFFFF8A65),
               ),
               const SizedBox(width: 8),
               _buildKpiBox(
                 emoji: '🎯',
-                titulo: 'Cumplimiento',
+                titulo: context.l10n.statsComplianceTitle,
                 valor: metricas != null
                     ? '${(metricas!.porcentajeCumplimiento * 100).round()}%'
                     : '0%',
@@ -133,7 +138,7 @@ class EstadisticasSemanalesCard extends StatelessWidget {
               const SizedBox(width: 8),
               _buildKpiBox(
                 emoji: '⭐',
-                titulo: 'Health Score',
+                titulo: context.l10n.healthScoreTitle,
                 valor: '${metricas?.healthScorePromedio ?? 0}/100',
                 color: const Color(0xFFFFD54F),
               ),
@@ -159,7 +164,7 @@ class EstadisticasSemanalesCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Aprovechamiento de alacena',
+                    context.l10n.statsPantryUsageTitle,
                     style: AppTextStyles.body(
                       size: 11,
                       weight: FontWeight.w700,
@@ -168,7 +173,10 @@ class EstadisticasSemanalesCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  metricas?.alacenaRatioLabel ?? '0% alacena propia',
+                  context.l10n.statsPantryUsagePct(
+                    ((metricas?.ratioAprovechamientoAlacena ?? 0.0) * 100)
+                        .round(),
+                  ),
                   style: AppTextStyles.body(
                     size: 11.5,
                     weight: FontWeight.w800,
@@ -201,7 +209,7 @@ class EstadisticasSemanalesCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'TOP ALIMENTOS DE LA SEMANA',
+                context.l10n.statsTopFoodsTitle,
                 style: AppTextStyles.title(
                   size: 12,
                   weight: FontWeight.w800,
@@ -217,21 +225,21 @@ class EstadisticasSemanalesCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 14),
               alignment: Alignment.center,
               child: Text(
-                'Sin comidas registradas en este período.',
+                context.l10n.statsNoMealsPeriod,
                 style: AppTextStyles.body(size: 11.5, color: Colors.white54),
               ),
             )
           else ...[
             if (topProteina != null)
               _buildFilaTop(
-                badgeLabel: 'PROTEÍNAS',
+                badgeLabel: context.l10n.macroProteinUpper,
                 badgeColor: const Color(0xFFE57373),
                 item: topProteina,
               ),
             if (topCarbos != null) ...[
               const SizedBox(height: 8),
               _buildFilaTop(
-                badgeLabel: 'CARBOHIDRATOS',
+                badgeLabel: context.l10n.macroCarbsUpper,
                 badgeColor: const Color(0xFFFFB74D),
                 item: topCarbos,
               ),
@@ -239,7 +247,7 @@ class EstadisticasSemanalesCard extends StatelessWidget {
             if (topGrasas != null) ...[
               const SizedBox(height: 8),
               _buildFilaTop(
-                badgeLabel: 'GRASAS',
+                badgeLabel: context.l10n.macroFatUpper,
                 badgeColor: const Color(0xFF81C784),
                 item: topGrasas,
               ),

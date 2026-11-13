@@ -7,7 +7,10 @@ abstract class BarcodeProductService {
   /// Busca un producto por código GS1 en Open Food Facts con fallback opcional a IA.
   /// Retorna `null` únicamente cuando el producto no existe en ninguna fuente.
   /// Lanza `BarcodeScanFailure` ante errores de red, timeout, formato o API.
-  Future<BarcodeProductData?> buscarPorCodigoBarras(String codigo);
+  Future<BarcodeProductData?> buscarPorCodigoBarras(
+    String codigo, {
+    String languageCode = 'es',
+  });
 
   /// Analiza una fotografía de envase, código o tabla nutricional con Gemini Vision.
   /// Retorna `null` si no se detectó producto legible.
@@ -15,5 +18,6 @@ abstract class BarcodeProductService {
   Future<BarcodeProductData?> analizarFotoEtiqueta({
     required Uint8List bytes,
     required String mimeType,
+    String languageCode = 'es',
   });
 }

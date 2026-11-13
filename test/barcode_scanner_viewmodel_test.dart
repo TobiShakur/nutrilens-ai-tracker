@@ -34,7 +34,10 @@ class FakeBarcodeProductService implements BarcodeProductService {
   onAnalizarFoto;
 
   @override
-  Future<BarcodeProductData?> buscarPorCodigoBarras(String codigo) {
+  Future<BarcodeProductData?> buscarPorCodigoBarras(
+    String codigo, {
+    String languageCode = 'es',
+  }) {
     llamadasBuscar++;
     ultimoCodigoRecibido = codigo;
     if (onBuscar != null) return onBuscar!(codigo);
@@ -45,6 +48,7 @@ class FakeBarcodeProductService implements BarcodeProductService {
   Future<BarcodeProductData?> analizarFotoEtiqueta({
     required Uint8List bytes,
     required String mimeType,
+    String languageCode = 'es',
   }) {
     llamadasFoto++;
     if (onAnalizarFoto != null) return onAnalizarFoto!(bytes, mimeType);

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nutrilens_provider/l10n/app_localizations.dart';
 import 'package:nutrilens_provider/features/alacena/domain/datasources/barcode_demo_datasource.dart';
 import 'package:nutrilens_provider/features/alacena/domain/entities/barcode_demo_chip.dart';
 import 'package:nutrilens_provider/features/alacena/domain/entities/barcode_product_data.dart';
@@ -23,7 +24,10 @@ class _FakeBarcodeService implements BarcodeProductService {
   Future<BarcodeProductData?> Function(String codigo)? onBuscar;
 
   @override
-  Future<BarcodeProductData?> buscarPorCodigoBarras(String codigo) {
+  Future<BarcodeProductData?> buscarPorCodigoBarras(
+    String codigo, {
+    String languageCode = 'es',
+  }) {
     if (onBuscar != null) return onBuscar!(codigo);
     return Future.value(null);
   }
@@ -32,6 +36,7 @@ class _FakeBarcodeService implements BarcodeProductService {
   Future<BarcodeProductData?> analizarFotoEtiqueta({
     required Uint8List bytes,
     required String mimeType,
+    String languageCode = 'es',
   }) async => null;
 }
 
@@ -73,6 +78,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('es'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
@@ -153,6 +161,9 @@ void main() {
             ),
           ],
           child: MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(

@@ -10,7 +10,18 @@ class AlacenaExito<T> extends AlacenaResult<T> {
   const AlacenaExito(this.datos);
 }
 
+enum AlacenaErrorCode {
+  none,
+  emptyName,
+  invalidCategory,
+  nonPositiveGrams,
+  negativeCalories,
+  negativeMacros,
+  notFound,
+}
+
 class AlacenaFallo<T> extends AlacenaResult<T> {
   final String mensaje;
-  const AlacenaFallo(this.mensaje);
+  final AlacenaErrorCode code;
+  const AlacenaFallo(this.mensaje, {this.code = AlacenaErrorCode.none});
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -35,7 +36,8 @@ class ReviewComidaSheet extends StatefulWidget {
 }
 
 class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
-  late String _titulo;
+  String _titulo = '';
+  bool _hasCustomTitle = false;
   String _tipoSeleccionado = 'Almuerzo';
 
   final List<String> _tipos = const [
@@ -47,9 +49,11 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _titulo = 'Comida ${widget.numeroComidaDefault}';
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasCustomTitle) {
+      _titulo = context.l10n.reviewDefaultMealTitle(widget.numeroComidaDefault);
+    }
   }
 
   Future<void> _editarTitulo() async {
@@ -59,7 +63,10 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
     );
 
     if (updated != null && updated.isNotEmpty && mounted) {
-      setState(() => _titulo = updated);
+      setState(() {
+        _hasCustomTitle = true;
+        _titulo = updated;
+      });
     }
   }
 
@@ -96,6 +103,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
     if (comida == null) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
     context.read<DiarioViewModel>().registrarComida(comida);
     Navigator.pop(context, true);
 
@@ -109,7 +117,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             borderRadius: BorderRadius.circular(12),
           ),
           content: Text(
-            '¡$_titulo agregada! (+${comida.calorias} kcal)',
+            l10n.reviewMealAddedSnackbar(_titulo, comida.calorias),
             style: AppTextStyles.body(
               size: 13,
               weight: FontWeight.w700,
@@ -122,6 +130,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
 
   void _openHealthScoreDetail(BuildContext context) {
     final scanVM = context.read<ScannerViewModel>();
+    final languageCode = context.activeLanguageCode;
     HealthScoreDetailSheet.show(
       context,
       listenable: scanVM,
@@ -144,12 +153,16 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
           evalState: s.healthScoreEvalState,
         );
       },
-      onEvaluate: () => scanVM.evaluarHealthScore(titulo: _titulo),
+      onEvaluate: () => scanVM.evaluarHealthScore(
+        titulo: _titulo,
+        languageCode: languageCode,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = context.select<ScannerViewModel, ScannerState>(
       (vm) => vm.state,
     );
@@ -222,7 +235,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                     if (esManual) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Armado manual',
+                        l10n.reviewManualBuildTag,
                         style: AppTextStyles.body(
                           size: 11.5,
                           weight: FontWeight.w600,
@@ -243,7 +256,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                     size: 20,
                     color: AppColors.forestDark,
                   ),
-                  tooltip: 'Cambiar nombre',
+                  tooltip: l10n.reviewChangeNameTooltip,
                   onPressed: _editarTitulo,
                 ),
               ),
@@ -260,7 +273,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                 final t = _tipos[index];
                 final activo = t == _tipoSeleccionado;
                 return ChoiceChip(
-                  label: Text(t),
+                  label: Text(localizedMealType(t, l10n)),
                   selected: activo,
                   showCheckmark: false,
                   onSelected: (val) {
@@ -296,7 +309,9 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      esManual ? 'TOTAL DE LA COMIDA' : 'TOTAL DETECTADO',
+                      esManual
+                          ? l10n.reviewManualTotal
+                          : l10n.reviewDetectedTotal,
                       style: AppTextStyles.body(
                         size: 10.5,
                         weight: FontWeight.w700,
@@ -304,7 +319,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                       ),
                     ),
                     Text(
-                      '${plato.totalCalorias} kcal',
+                      '${plato.totalCalorias} ${l10n.kcalUnit}',
                       style: AppTextStyles.number(
                         size: 22,
                         weight: FontWeight.w900,
@@ -314,7 +329,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                   ],
                 ),
                 Text(
-                  'P ${plato.totalProteinas.round()}g · C ${plato.totalCarbos.round()}g · G ${plato.totalGrasas.round()}g',
+                  'P ${plato.totalProteinas.round()}g · C ${plato.totalCarbos.round()}g · ${l10n.macroFatShort[0]} ${plato.totalGrasas.round()}g',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -330,13 +345,15 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             children: [
               Text(
                 esManual
-                    ? 'Ingredientes (${plato.ingredientes.length})'
-                    : 'Ingredientes detectados (${plato.ingredientes.length})',
+                    ? l10n.reviewIngredientsCount(plato.ingredientes.length)
+                    : l10n.reviewDetectedIngredientsCount(
+                        plato.ingredientes.length,
+                      ),
                 style: AppTextStyles.title(size: 14, weight: FontWeight.w800),
               ),
               if (hasIngredients)
                 Text(
-                  'Deslizá para quitar',
+                  l10n.reviewSwipeToRemove,
                   style: AppTextStyles.body(
                     size: 11,
                     color: AppColors.textMuted,
@@ -445,7 +462,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              'Alacena',
+                                              l10n.pantryTag,
                                               style: AppTextStyles.body(
                                                 size: 9.5,
                                                 weight: FontWeight.w800,
@@ -458,7 +475,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${item.calorias} kcal · P ${item.proteinas}g · C ${item.carbohidratos}g · G ${item.grasas}g',
+                                      '${item.calorias} ${l10n.kcalUnit} · P ${item.proteinas}g · C ${item.carbohidratos}g · ${l10n.macroFatShort[0]} ${item.grasas}g',
                                       style: AppTextStyles.body(
                                         size: 11,
                                         weight: FontWeight.w600,
@@ -524,7 +541,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             ),
             icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
             label: Text(
-              'Agregar ingrediente desde Mi Alacena',
+              l10n.addIngredientFromPantry,
               style: AppTextStyles.body(
                 size: 13,
                 weight: FontWeight.w800,
@@ -549,7 +566,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
               ),
               onPressed: hasIngredients ? _confirmarAgregarComida : null,
               child: Text(
-                'Agregar comida',
+                l10n.reviewAddMealBtn,
                 style: AppTextStyles.body(
                   size: 15,
                   weight: FontWeight.w900,
@@ -571,6 +588,7 @@ class _EmptyIngredientsPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -591,7 +609,7 @@ class _EmptyIngredientsPlaceholder extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Todavía no agregaste ingredientes',
+                l10n.reviewNoIngredientsTitle,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.title(
                   size: 14,
@@ -601,7 +619,7 @@ class _EmptyIngredientsPlaceholder extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Tocá "Agregar ingrediente desde Mi Alacena" para armar tu comida.',
+                l10n.reviewNoIngredientsSubtitle,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.body(
                   size: 12,
@@ -642,11 +660,12 @@ class _EditMealTitleDialogState extends State<_EditMealTitleDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       backgroundColor: AppColors.cardWhite,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        'Nombre de la comida',
+        l10n.reviewMealNameTitle,
         style: AppTextStyles.title(size: 16.5, weight: FontWeight.w800),
       ),
       content: TextField(
@@ -654,7 +673,7 @@ class _EditMealTitleDialogState extends State<_EditMealTitleDialog> {
         autofocus: true,
         style: AppTextStyles.body(size: 14, weight: FontWeight.w700),
         decoration: InputDecoration(
-          hintText: 'Ej: Almuerzo liviano, Bowl post entreno',
+          hintText: l10n.reviewMealNameHint,
           filled: true,
           fillColor: AppColors.inputBg,
           border: OutlineInputBorder(
@@ -667,7 +686,7 @@ class _EditMealTitleDialogState extends State<_EditMealTitleDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            'Cancelar',
+            l10n.cancel,
             style: AppTextStyles.body(color: AppColors.textMuted),
           ),
         ),
@@ -680,7 +699,7 @@ class _EditMealTitleDialogState extends State<_EditMealTitleDialog> {
             ),
           ),
           onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
-          child: const Text('Guardar'),
+          child: Text(l10n.save),
         ),
       ],
     );
@@ -717,11 +736,12 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       backgroundColor: AppColors.cardWhite,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        'Cantidad en gramos',
+        l10n.gramsAmountTitle,
         style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
       ),
       content: Column(
@@ -742,7 +762,7 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
             decoration: InputDecoration(
-              suffixText: 'gramos',
+              suffixText: l10n.gramsUnit,
               filled: true,
               fillColor: AppColors.inputBg,
               border: OutlineInputBorder(
@@ -756,7 +776,7 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -770,7 +790,7 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
             final val = double.tryParse(_ctrl.text.trim());
             Navigator.pop(context, val);
           },
-          child: const Text('Aplicar'),
+          child: Text(l10n.apply),
         ),
       ],
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../scanner/data/services/image_picker_capture_service_impl.dart';
@@ -68,6 +69,8 @@ class BarcodeScannerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final languageCode = context.activeLanguageCode;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -93,8 +96,8 @@ class BarcodeScannerSheet extends StatelessWidget {
               builder: (context, vm, _) {
                 final state = vm.state;
                 return switch (state) {
-                  BarcodeScannerLoading(:final mensaje) => _LoadingCard(
-                    mensaje: mensaje,
+                  BarcodeScannerLoading() => _LoadingCard(
+                    mensaje: localizedBarcodeLoading(state, l10n),
                   ),
                   BarcodeScannerSuccess(:final producto) => _ResultadoCard(
                     resultado: producto,
@@ -110,21 +113,26 @@ class BarcodeScannerSheet extends StatelessWidget {
                         _ModoCamaraView(
                           onCamaraTap: () => context
                               .read<BarcodeScannerViewModel>()
-                              .capturarConCamara(),
+                              .capturarConCamara(languageCode: languageCode),
                           onGaleriaTap: () => context
                               .read<BarcodeScannerViewModel>()
-                              .seleccionarDeGaleria(),
+                              .seleccionarDeGaleria(languageCode: languageCode),
                         )
                       else
                         _ModoCodigoView(
                           chips: vm.chipsDemo,
                           onBuscar: (codigo) => context
                               .read<BarcodeScannerViewModel>()
-                              .buscarPorCodigoBarras(codigo),
+                              .buscarPorCodigoBarras(
+                                codigo,
+                                languageCode: languageCode,
+                              ),
                         ),
-                      if (state case BarcodeScannerError(:final mensaje)) ...[
+                      if (state is BarcodeScannerError) ...[
                         const SizedBox(height: 14),
-                        _ErrorBanner(mensaje: mensaje),
+                        _ErrorBanner(
+                          mensaje: localizedBarcodeError(state, l10n),
+                        ),
                       ],
                     ],
                   ),
@@ -163,6 +171,7 @@ class _SheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -170,12 +179,12 @@ class _SheetHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'ESCANEAR PRODUCTO',
+              l10n.barcodeTitle,
               style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
             Text(
-              'Código de barras o tabla nutricional',
+              l10n.barcodeSubtitle,
               style: AppTextStyles.body(size: 12, color: AppColors.textMuted),
             ),
           ],
@@ -194,6 +203,7 @@ class _ModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final modo = context.select<BarcodeScannerViewModel, ModoEscaneoProducto>(
       (vm) => vm.modo,
     );
@@ -208,7 +218,7 @@ class _ModeSelector extends StatelessWidget {
         children: [
           Expanded(
             child: _TabButton(
-              label: 'Foto',
+              label: l10n.barcodeTabPhoto,
               icon: Icons.camera_alt_rounded,
               isActive: modo == ModoEscaneoProducto.camara,
               onTap: () => context.read<BarcodeScannerViewModel>().cambiarModo(
@@ -218,7 +228,7 @@ class _ModeSelector extends StatelessWidget {
           ),
           Expanded(
             child: _TabButton(
-              label: 'Código de barras',
+              label: l10n.barcodeTabCode,
               icon: Icons.barcode_reader,
               isActive: modo == ModoEscaneoProducto.codigo,
               onTap: () => context.read<BarcodeScannerViewModel>().cambiarModo(
@@ -373,6 +383,7 @@ class _ModoCamaraView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -396,13 +407,13 @@ class _ModoCamaraView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Sacale una foto al producto',
+            l10n.barcodePhotoTitle,
             textAlign: TextAlign.center,
             style: AppTextStyles.title(size: 14, weight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           Text(
-            'Escaneá el frente del envase o la tabla nutricional para cargar sus datos.',
+            l10n.barcodePhotoSubtitle,
             textAlign: TextAlign.center,
             style: AppTextStyles.body(size: 12, color: AppColors.textMuted),
           ),
@@ -427,7 +438,7 @@ class _ModoCamaraView extends StatelessWidget {
                     color: AppColors.pistachio,
                   ),
                   label: Text(
-                    'Sacar foto',
+                    l10n.barcodeTakePhoto,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,
@@ -453,7 +464,7 @@ class _ModoCamaraView extends StatelessWidget {
                   onPressed: onGaleriaTap,
                   icon: const Icon(Icons.photo_library_rounded, size: 18),
                   label: Text(
-                    'Subir foto',
+                    l10n.barcodeUploadPhoto,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,
@@ -496,6 +507,7 @@ class _ModoCodigoViewState extends State<_ModoCodigoView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -512,7 +524,7 @@ class _ModoCodigoViewState extends State<_ModoCodigoView> {
                 ],
                 onSubmitted: (_) => _enviar(),
                 decoration: InputDecoration(
-                  hintText: 'Ingresá el código de barras',
+                  hintText: l10n.barcodeInputHint,
                   prefixIcon: const Icon(
                     Icons.qr_code_2_rounded,
                     size: 22,
@@ -562,7 +574,7 @@ class _ModoCodigoViewState extends State<_ModoCodigoView> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Ejemplos rápidos:',
+          l10n.barcodeQuickExamples,
           style: AppTextStyles.body(
             size: 11.5,
             color: AppColors.textMuted,
@@ -613,6 +625,7 @@ class _ResultadoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -651,8 +664,8 @@ class _ResultadoCard extends StatelessWidget {
                       ),
                     ),
                     if (resultado.marca.trim().isNotEmpty &&
-                        resultado.marca.trim().toLowerCase() !=
-                            'sin marca') ...[
+                        resultado.marca.trim().toLowerCase() != 'sin marca' &&
+                        resultado.marca.trim().toLowerCase() != 'no brand') ...[
                       const SizedBox(height: 2),
                       Text(
                         resultado.marca.trim(),
@@ -679,20 +692,26 @@ class _ResultadoCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _NutrienteMini(
-                  label: 'Porción',
+                  label: l10n.barcodeResultPortion,
                   valor: '${resultado.porcionGramos.round()}g',
                 ),
                 _NutrienteMini(
-                  label: 'Calorías',
-                  valor: '${resultado.calorias} kcal',
+                  label: l10n.barcodeResultCalories,
+                  valor: '${resultado.calorias} ${l10n.kcalUnit}',
                   isBold: true,
                 ),
-                _NutrienteMini(label: 'Prot', valor: '${resultado.proteinas}g'),
                 _NutrienteMini(
-                  label: 'Carbos',
+                  label: l10n.macroProteinShort,
+                  valor: '${resultado.proteinas}g',
+                ),
+                _NutrienteMini(
+                  label: l10n.macroCarbsShort,
                   valor: '${resultado.carbohidratos}g',
                 ),
-                _NutrienteMini(label: 'Grasas', valor: '${resultado.grasas}g'),
+                _NutrienteMini(
+                  label: l10n.macroFatShort,
+                  valor: '${resultado.grasas}g',
+                ),
               ],
             ),
           ),
@@ -709,7 +728,7 @@ class _ResultadoCard extends StatelessWidget {
             ),
             onPressed: onUsar,
             child: Text(
-              'Confirmar',
+              l10n.confirm,
               style: AppTextStyles.body(
                 size: 13.5,
                 weight: FontWeight.w900,
@@ -721,7 +740,7 @@ class _ResultadoCard extends StatelessWidget {
           TextButton(
             onPressed: onReintentar,
             child: Text(
-              'Volver a escanear',
+              l10n.barcodeRescan,
               style: AppTextStyles.body(
                 size: 12,
                 weight: FontWeight.w700,

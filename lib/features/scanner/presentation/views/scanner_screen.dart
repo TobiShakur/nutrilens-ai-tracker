@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../alacena/presentation/viewmodels/alacena_viewmodel.dart';
@@ -71,10 +72,12 @@ class _ScannerScreenState extends State<ScannerScreen>
     HapticFeedback.mediumImpact();
 
     final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
+    final languageCode = context.activeLanguageCode;
     _pickingExternalMedia = true;
     try {
       final ok = await scanVM.capturarYAnalizar(
         alacenaUsuario: pantryItems,
+        languageCode: languageCode,
         liveCapture: _cameraController.isReady
             ? _cameraController.takePicture
             : null,
@@ -92,10 +95,12 @@ class _ScannerScreenState extends State<ScannerScreen>
     if (scanVM.isBusy) return;
 
     final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
+    final languageCode = context.activeLanguageCode;
     _pickingExternalMedia = true;
     try {
       final ok = await scanVM.seleccionarGaleriaYAnalizar(
         alacenaUsuario: pantryItems,
+        languageCode: languageCode,
       );
       if (ok && mounted) {
         await _onScanSuccess();
@@ -110,7 +115,10 @@ class _ScannerScreenState extends State<ScannerScreen>
     if (scanVM.isBusy) return;
 
     final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
-    final ok = await scanVM.reintentarAnalisis(alacenaUsuario: pantryItems);
+    final ok = await scanVM.reintentarAnalisis(
+      alacenaUsuario: pantryItems,
+      languageCode: context.activeLanguageCode,
+    );
     if (ok && mounted) {
       await _onScanSuccess();
     }
@@ -169,6 +177,7 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final state = context.select<ScannerViewModel, ScannerState>(
       (vm) => vm.state,
     );
@@ -326,8 +335,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                         child: Center(
                           child: _DockActionButton(
                             icon: Icons.photo_library_outlined,
-                            label: 'Fototeca',
-                            semanticsLabel: 'Elegir foto de fototeca',
+                            label: l10n.scannerGallery,
+                            semanticsLabel: l10n.scannerGallerySemantics,
                             enabled: !isBusy,
                             reduceMotion: reduceMotion,
                             onTap: _handleGalleryTap,
@@ -343,8 +352,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                         child: Center(
                           child: _DockActionButton(
                             icon: Icons.edit_note_rounded,
-                            label: 'Manual',
-                            semanticsLabel: 'Armar comida manual',
+                            label: l10n.scannerManual,
+                            semanticsLabel: l10n.scannerManualSemantics,
                             enabled: !isBusy,
                             reduceMotion: reduceMotion,
                             onTap: _handleManualTap,
@@ -371,6 +380,7 @@ class _ScannerTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return SizedBox(
       height: 56,
       child: Padding(
@@ -380,12 +390,12 @@ class _ScannerTopBar extends StatelessWidget {
           children: [
             Semantics(
               button: true,
-              label: 'Cerrar escáner',
+              label: l10n.scannerCloseSemantics,
               child: SizedBox(
                 width: 48,
                 height: 48,
                 child: IconButton(
-                  tooltip: 'Cerrar',
+                  tooltip: l10n.scannerCloseTooltip,
                   icon: const Icon(
                     Icons.close_rounded,
                     color: AppColors.textLight,
@@ -396,7 +406,7 @@ class _ScannerTopBar extends StatelessWidget {
               ),
             ),
             Text(
-              'Escanear Plato',
+              l10n.scannerTitle,
               style: AppTextStyles.title(
                 size: 16,
                 weight: FontWeight.w800,
@@ -413,12 +423,14 @@ class _ScannerTopBar extends StatelessWidget {
                 return Semantics(
                   button: true,
                   toggled: flashOn,
-                  label: flashOn ? 'Apagar flash' : 'Encender flash',
+                  label: flashOn ? l10n.scannerFlashOff : l10n.scannerFlashOn,
                   child: SizedBox(
                     width: 48,
                     height: 48,
                     child: IconButton(
-                      tooltip: flashOn ? 'Apagar flash' : 'Encender flash',
+                      tooltip: flashOn
+                          ? l10n.scannerFlashOff
+                          : l10n.scannerFlashOn,
                       icon: Icon(
                         flashOn
                             ? Icons.flash_on_rounded
@@ -492,9 +504,10 @@ class _RetakePillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Semantics(
       button: true,
-      label: 'Retomar foto',
+      label: l10n.scannerRetakeSemantics,
       child: Material(
         color: AppColors.pistachio,
         borderRadius: BorderRadius.circular(24),
@@ -515,7 +528,7 @@ class _RetakePillButton extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Retomar',
+                    l10n.scannerRetake,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,
@@ -539,6 +552,7 @@ class _AnalyzingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.72),
       child: Center(
@@ -555,7 +569,7 @@ class _AnalyzingOverlay extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              isCapturing ? 'Abriendo cámara...' : 'Analizando nutrientes...',
+              isCapturing ? l10n.scannerCapturing : l10n.scannerAnalyzing,
               style: AppTextStyles.title(
                 size: 14,
                 weight: FontWeight.w700,
@@ -565,7 +579,7 @@ class _AnalyzingOverlay extends StatelessWidget {
             if (!isCapturing) ...[
               const SizedBox(height: 4),
               Text(
-                'Esto toma unos segundos',
+                l10n.scannerTakingSeconds,
                 style: AppTextStyles.body(
                   size: 12,
                   color: AppColors.textMutedLight,
@@ -639,6 +653,7 @@ class _ScannerErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
       decoration: BoxDecoration(
@@ -656,7 +671,7 @@ class _ScannerErrorBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              error.message,
+              localizedScannerError(error, l10n),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.body(
@@ -676,7 +691,7 @@ class _ScannerErrorBanner extends StatelessWidget {
               ),
               onPressed: onRetry,
               child: Text(
-                'Reintentar',
+                l10n.retry,
                 style: AppTextStyles.body(
                   size: 12.5,
                   weight: FontWeight.w800,
@@ -686,12 +701,12 @@ class _ScannerErrorBanner extends StatelessWidget {
             ),
           Semantics(
             button: true,
-            label: 'Descartar error',
+            label: l10n.scannerErrorDismissSemantics,
             child: SizedBox(
               width: 44,
               height: 44,
               child: IconButton(
-                tooltip: 'Cerrar aviso',
+                tooltip: l10n.scannerErrorDismissTooltip,
                 icon: const Icon(
                   Icons.close_rounded,
                   color: AppColors.textLight,
@@ -722,9 +737,10 @@ class _PantryTogglePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Semantics(
       toggled: value,
-      label: 'Usar ingredientes de mi alacena',
+      label: l10n.scannerPreferPantry,
       child: Opacity(
         opacity: enabled ? 1.0 : 0.4,
         child: InkWell(
@@ -756,7 +772,7 @@ class _PantryTogglePill extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Usar ingredientes de mi alacena',
+                    l10n.scannerPreferPantry,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w700,
@@ -902,7 +918,7 @@ class _ShutterButtonState extends State<_ShutterButton> {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: 'Escanear plato con cámara',
+      label: context.l10n.scannerCaptureSemantics,
       child: GestureDetector(
         onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
         onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,

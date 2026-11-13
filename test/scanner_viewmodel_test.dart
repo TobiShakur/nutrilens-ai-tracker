@@ -55,6 +55,7 @@ class _FakeScannerRemoteDataSource implements ScannerRemoteDataSource {
   Future<PlatoDetectadoModel> analizarFotoPlato({
     required ImagenPlato imagen,
     required List<String> nombresAlacena,
+    String languageCode = 'es',
   }) async {
     if (shouldFail) {
       throw const ScannerNetworkFailure();
@@ -89,6 +90,7 @@ class _FakeScannerRemoteDataSource implements ScannerRemoteDataSource {
   @override
   Future<MealHealthEvaluationModel> evaluarHealthScore({
     required MealHealthEvaluationInput input,
+    String languageCode = 'es',
   }) async {
     if (shouldFail) {
       throw const ScannerNetworkFailure();
@@ -107,7 +109,10 @@ class _ControlledMealHealthRepository implements MealHealthRepository {
   onEvaluate;
 
   @override
-  Future<MealHealthResult> evaluateMealHealth(MealHealthEvaluationInput input) {
+  Future<MealHealthResult> evaluateMealHealth(
+    MealHealthEvaluationInput input, {
+    String languageCode = 'es',
+  }) {
     calls++;
     if (onEvaluate != null) {
       return onEvaluate!(input);
@@ -137,6 +142,7 @@ class _ControlledScannerRepository implements ScannerRepository {
     required ImagenPlato imagen,
     required bool preferirAlacena,
     required List<IngredienteAlacena> alacenaUsuario,
+    String languageCode = 'es',
   }) {
     scanCalls++;
     if (onScan != null) {

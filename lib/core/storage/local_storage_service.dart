@@ -15,6 +15,7 @@ class LocalStorageService {
   static const _keyDias = 'nutrilens_dias_mes_v3';
   static const _keyAlacena = 'nutrilens_alacena_items_v1';
   static const _keyConfig = 'nutrilens_configuracion_perfil_v1';
+  static const _keyLocale = 'nutrilens_locale_v1';
 
   final SharedPreferences? _prefs;
 
@@ -120,6 +121,30 @@ class LocalStorageService {
       return ConfiguracionNutricional.fromJson(decoded);
     } catch (e) {
       debugPrint('Error al leer configuración desde LocalStorage: $e');
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Preferencia de Idioma (Locale)
+  // ---------------------------------------------------------------------------
+  Future<void> guardarLocale(String languageCode) async {
+    if (_prefs == null) return;
+    try {
+      await _prefs.setString(_keyLocale, languageCode);
+    } catch (e) {
+      debugPrint('Error al guardar locale en LocalStorage: $e');
+    }
+  }
+
+  String? obtenerLocale() {
+    if (_prefs == null) return null;
+    try {
+      final code = _prefs.getString(_keyLocale);
+      if (code == null || code.trim().isEmpty) return null;
+      return code.trim();
+    } catch (e) {
+      debugPrint('Error al leer locale desde LocalStorage: $e');
       return null;
     }
   }

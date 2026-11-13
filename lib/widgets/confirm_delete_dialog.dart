@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/localization/l10n_extensions.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 
@@ -7,9 +8,12 @@ class ConfirmDeleteDialog {
     BuildContext context, {
     required String titulo,
     required String mensaje,
-    String textoConfirmar = 'Eliminar',
-    String textoCancelar = 'Cancelar',
+    String? textoConfirmar,
+    String? textoCancelar,
   }) async {
+    final l10n = context.l10n;
+    final confirmLabel = textoConfirmar ?? l10n.delete;
+    final cancelLabel = textoCancelar ?? l10n.cancel;
     final resultado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -32,7 +36,7 @@ class ConfirmDeleteDialog {
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
-              textoCancelar,
+              cancelLabel,
               style: AppTextStyles.body(
                 size: 13,
                 weight: FontWeight.w700,
@@ -52,7 +56,7 @@ class ConfirmDeleteDialog {
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              textoConfirmar,
+              confirmLabel,
               style: AppTextStyles.body(
                 size: 13,
                 weight: FontWeight.w800,

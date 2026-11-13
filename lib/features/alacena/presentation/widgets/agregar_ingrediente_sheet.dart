@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/categoria_alacena.dart';
@@ -42,7 +43,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
   late final TextEditingController _grasasCtrl;
 
   late CategoriaAlacena _categoria;
-  String? _error;
+  AlacenaFallo<dynamic>? _errorFallo;
 
   bool get _esEdicion => widget.ingredienteAEditar != null;
 
@@ -117,10 +118,11 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
       _carbosCtrl.text = producto.carbohidratos.toString();
       _grasasCtrl.text = producto.grasas.toString();
       _categoria = catSugerida;
-      _error = null;
+      _errorFallo = null;
     });
 
     if (mounted) {
+      final l10n = context.l10n;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -140,7 +142,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Producto cargado',
+                    l10n.pantryProductLoaded,
                     style: AppTextStyles.body(
                       size: 13,
                       color: Colors.white,
@@ -156,6 +158,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
   }
 
   void _mostrarSelectorCategorias(BuildContext context) {
+    final l10n = context.l10n;
     final vm = context.read<AlacenaViewModel>();
     final categorias = vm.categorias.where((c) => c.id != 'todos').toList();
 
@@ -188,7 +191,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'SELECCIONAR CATEGORÍA',
+                    l10n.pantrySelectCatTitle,
                     style: AppTextStyles.title(
                       size: 15,
                       weight: FontWeight.w800,
@@ -241,7 +244,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Nueva categoría',
+                              l10n.pantryNewCatBtn,
                               style: AppTextStyles.body(
                                 size: 12,
                                 weight: FontWeight.w800,
@@ -282,7 +285,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              cat.label,
+                              localizedCategoriaLabel(cat, l10n),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: AppTextStyles.body(
@@ -354,6 +357,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
 
     if (!mounted) return;
 
+    final l10n = context.l10n;
     switch (resultado) {
       case AlacenaExito(datos: final item):
         Navigator.pop(context);
@@ -368,8 +372,14 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
               ),
               content: Text(
                 _esEdicion
-                    ? 'Modificado: ${item.nombreConMarca} (${item.porcionLabel})'
-                    : 'Agregado: ${item.nombreConMarca} (${item.porcionLabel})',
+                    ? l10n.pantryIngredientUpdated(
+                        item.nombreConMarca,
+                        item.porcionLabel,
+                      )
+                    : l10n.pantryIngredientAdded(
+                        item.nombreConMarca,
+                        item.porcionLabel,
+                      ),
                 style: AppTextStyles.body(
                   size: 13,
                   weight: FontWeight.w700,
@@ -378,13 +388,14 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
               ),
             ),
           );
-      case AlacenaFallo(:final mensaje):
-        setState(() => _error = mensaje);
+      case final AlacenaFallo<IngredienteAlacena> fallo:
+        setState(() => _errorFallo = fallo);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
@@ -419,8 +430,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                     children: [
                       Text(
                         _esEdicion
-                            ? 'MODIFICAR INGREDIENTE'
-                            : 'NUEVO INGREDIENTE',
+                            ? l10n.pantryEditIngredient
+                            : l10n.pantryNewIngredient,
                         style: AppTextStyles.title(
                           size: 16,
                           weight: FontWeight.w800,
@@ -429,8 +440,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                       const SizedBox(height: 2),
                       Text(
                         _esEdicion
-                            ? 'Actualizá los valores de este alimento.'
-                            : 'Cargá los datos según tu porción de paquete.',
+                            ? l10n.pantryEditIngredientSub
+                            : l10n.pantryNewIngredientSub,
                         style: AppTextStyles.body(
                           size: 12,
                           color: AppColors.textMuted,
@@ -466,7 +477,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 ),
               ],
             ),
-            if (_error != null) ...[
+            if (_errorFallo != null) ...[
               const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -475,7 +486,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  _error!,
+                  localizedAlacenaError(_errorFallo!, l10n),
                   style: const TextStyle(
                     color: AppColors.alertRed,
                     fontWeight: FontWeight.w700,
@@ -487,8 +498,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
             const SizedBox(height: 12),
             _buildTextField(
               controller: _nombreCtrl,
-              label: 'Nombre del alimento *',
-              hint: 'Ej: Pan Integral, Yogur Griego, Galletitas',
+              label: l10n.pantryFieldNameLabel,
+              hint: l10n.pantryFieldNameHint,
             ),
             const SizedBox(height: 8),
             Row(
@@ -497,8 +508,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                   flex: 3,
                   child: _buildTextField(
                     controller: _marcaCtrl,
-                    label: 'Marca (opcional)',
-                    hint: 'Ej: Fargo, La Serenísima',
+                    label: l10n.pantryFieldBrandLabel,
+                    hint: l10n.pantryFieldBrandHint,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -506,7 +517,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                   flex: 2,
                   child: _buildTextField(
                     controller: _porcionCtrl,
-                    label: 'Porción (g) *',
+                    label: l10n.pantryFieldPortionLabel,
                     hint: '100',
                     isNumber: true,
                   ),
@@ -519,7 +530,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Categoría Nutricional',
+                  l10n.pantryCategoryLabel,
                   style: AppTextStyles.body(
                     size: 11.5,
                     weight: FontWeight.w700,
@@ -552,7 +563,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _categoria.label,
+                              localizedCategoriaLabel(_categoria, l10n),
                               style: AppTextStyles.body(
                                 size: 13,
                                 weight: FontWeight.w800,
@@ -564,7 +575,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                         Row(
                           children: [
                             Text(
-                              'Elegir',
+                              l10n.choose,
                               style: AppTextStyles.body(
                                 size: 12,
                                 weight: FontWeight.w700,
@@ -587,7 +598,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Valores Nutricionales de la Porción',
+              l10n.pantryNutritionValuesTitle,
               style: AppTextStyles.body(
                 size: 11.5,
                 weight: FontWeight.w700,
@@ -600,8 +611,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 Expanded(
                   child: _buildTextField(
                     controller: _caloriasCtrl,
-                    label: 'Calorías *',
-                    hint: 'kcal',
+                    label: l10n.pantryFieldCaloriesLabel,
+                    hint: l10n.kcalUnit,
                     isNumber: true,
                   ),
                 ),
@@ -609,8 +620,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 Expanded(
                   child: _buildTextField(
                     controller: _proteinasCtrl,
-                    label: 'Proteínas',
-                    hint: 'gramos',
+                    label: l10n.macroProtein,
+                    hint: l10n.gramsUnit,
                     isNumber: true,
                   ),
                 ),
@@ -622,8 +633,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 Expanded(
                   child: _buildTextField(
                     controller: _carbosCtrl,
-                    label: 'Carbos',
-                    hint: 'gramos',
+                    label: l10n.macroCarbs,
+                    hint: l10n.gramsUnit,
                     isNumber: true,
                   ),
                 ),
@@ -631,8 +642,8 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 Expanded(
                   child: _buildTextField(
                     controller: _grasasCtrl,
-                    label: 'Grasas',
-                    hint: 'gramos',
+                    label: l10n.macroFat,
+                    hint: l10n.gramsUnit,
                     isNumber: true,
                   ),
                 ),
@@ -652,7 +663,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 ),
                 onPressed: _guardar,
                 child: Text(
-                  _esEdicion ? 'Guardar cambios' : 'Guardar ingrediente',
+                  _esEdicion ? l10n.saveChanges : l10n.pantrySaveIngredientBtn,
                   style: AppTextStyles.body(
                     size: 14,
                     weight: FontWeight.w700,

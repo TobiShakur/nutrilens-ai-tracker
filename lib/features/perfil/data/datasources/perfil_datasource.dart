@@ -176,6 +176,8 @@ class PerfilDataSourceImpl implements PerfilDataSource {
     return ResumenSemanalMetricas(
       semanaTitulo: semanaTitulo,
       offset: offset,
+      lunesSemana: lunesSemana,
+      domingoSemana: domingoSemana,
       rachaActualDias: racha,
       diasCumplidos: diasCumplidos,
       totalDiasRegistrados: totalRegistrados,

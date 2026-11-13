@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -25,10 +26,11 @@ class DetalleIngredienteSheet extends StatelessWidget {
   }
 
   Future<void> _confirmarEliminar(BuildContext context) async {
+    final l10n = context.l10n;
     final confirmado = await ConfirmDeleteDialog.show(
       context,
-      titulo: '¿Eliminar ingrediente?',
-      mensaje: 'Se quitará "${ingrediente.nombreConMarca}" de tu alacena.',
+      titulo: l10n.deleteIngredientTitle,
+      mensaje: l10n.deleteIngredientMessage(ingrediente.nombreConMarca),
     );
     if (confirmado && context.mounted) {
       await context.read<AlacenaViewModel>().borrarIngrediente(ingrediente.id);
@@ -40,6 +42,7 @@ class DetalleIngredienteSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final bool esPorcion100 = ingrediente.gramosPorcion == 100.0;
 
     return Container(
@@ -105,7 +108,10 @@ class DetalleIngredienteSheet extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            ingrediente.categoria.label,
+                            localizedCategoriaLabel(
+                              ingrediente.categoria,
+                              l10n,
+                            ),
                             style: AppTextStyles.body(
                               size: 11,
                               weight: FontWeight.w700,
@@ -115,7 +121,7 @@ class DetalleIngredienteSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Porción: ${ingrediente.porcionLabel}',
+                          l10n.ingredientPortionLabel(ingrediente.porcionLabel),
                           style: AppTextStyles.body(
                             size: 11.5,
                             weight: FontWeight.w600,
@@ -145,7 +151,7 @@ class DetalleIngredienteSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Energía de la porción',
+                      l10n.ingredientPortionEnergy,
                       style: AppTextStyles.body(
                         size: 12,
                         color: AppColors.textMuted,
@@ -166,7 +172,7 @@ class DetalleIngredienteSheet extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'kcal',
+                          l10n.kcalUnit,
                           style: AppTextStyles.body(
                             size: 13,
                             weight: FontWeight.w700,
@@ -204,21 +210,21 @@ class DetalleIngredienteSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: _MacroPill(
-                  label: 'Proteínas',
+                  label: l10n.macroProtein,
                   value: '${ingrediente.proteinas.toStringAsFixed(1)}g',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MacroPill(
-                  label: 'Carbos',
+                  label: l10n.macroCarbs,
                   value: '${ingrediente.carbohidratos.toStringAsFixed(1)}g',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MacroPill(
-                  label: 'Grasas',
+                  label: l10n.macroFat,
                   value: '${ingrediente.grasas.toStringAsFixed(1)}g',
                 ),
               ),
@@ -228,7 +234,12 @@ class DetalleIngredienteSheet extends StatelessWidget {
             const SizedBox(height: 10),
             Center(
               child: Text(
-                'Equivalente cada 100g: ${ingrediente.caloriasPor100g} kcal · P ${ingrediente.proteinasPor100g.round()}g · C ${ingrediente.carbohidratosPor100g.round()}g · G ${ingrediente.grasasPor100g.round()}g',
+                l10n.ingredientPer100g(
+                  ingrediente.caloriasPor100g,
+                  ingrediente.proteinasPor100g.round(),
+                  ingrediente.carbohidratosPor100g.round(),
+                  ingrediente.grasasPor100g.round(),
+                ),
                 style: AppTextStyles.body(size: 11, color: AppColors.textMuted),
               ),
             ),
@@ -252,7 +263,7 @@ class DetalleIngredienteSheet extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   label: Text(
-                    'Modificar',
+                    l10n.edit,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,
@@ -284,7 +295,7 @@ class DetalleIngredienteSheet extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.delete_outline_rounded, size: 18),
                   label: Text(
-                    'Eliminar',
+                    l10n.delete,
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,

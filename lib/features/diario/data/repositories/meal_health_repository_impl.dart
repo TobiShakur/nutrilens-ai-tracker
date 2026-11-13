@@ -13,10 +13,14 @@ class MealHealthRepositoryImpl implements MealHealthRepository {
 
   @override
   Future<MealHealthResult> evaluateMealHealth(
-    MealHealthEvaluationInput input,
-  ) async {
+    MealHealthEvaluationInput input, {
+    String languageCode = 'es',
+  }) async {
     try {
-      final dto = await _remoteDataSource.evaluarHealthScore(input: input);
+      final dto = await _remoteDataSource.evaluarHealthScore(
+        input: input,
+        languageCode: languageCode,
+      );
       return MealHealthSuccess(dto.toEntity());
     } on ScannerFailure catch (failure) {
       return MealHealthError(failure);

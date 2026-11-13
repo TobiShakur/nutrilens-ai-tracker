@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
@@ -23,11 +24,12 @@ class MacroRowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       children: [
         Expanded(
           child: _buildMacroCard(
-            label: 'Proteínas',
+            label: l10n.macroProtein,
             consumed: proteinasConsumidas,
             target: metaProteinas,
           ),
@@ -35,7 +37,7 @@ class MacroRowWidget extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _buildMacroCard(
-            label: 'Grasas',
+            label: l10n.macroFat,
             consumed: grasasConsumidas,
             target: metaGrasas,
           ),
@@ -43,7 +45,7 @@ class MacroRowWidget extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _buildMacroCard(
-            label: 'Carbos',
+            label: l10n.macroCarbs,
             consumed: carbosConsumidos,
             target: metaCarbos,
           ),

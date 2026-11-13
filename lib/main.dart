@@ -5,8 +5,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'core/localization/locale_provider.dart';
 import 'core/storage/local_storage_service.dart';
 import 'core/theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 import 'features/alacena/data/datasources/barcode_demo_local_datasource.dart';
 import 'features/alacena/data/datasources/barcode_product_service_impl.dart';
 import 'features/alacena/data/repositories/alacena_repository_impl.dart';
@@ -70,6 +72,9 @@ Future<void> main() async {
           create: (_) => const BarcodeDemoLocalDatasource(),
         ),
         Provider<ImageCaptureService>.value(value: imageCaptureService),
+        ChangeNotifierProvider<LocaleProvider>(
+          create: (_) => LocaleProvider(storageService: storageService),
+        ),
         ChangeNotifierProvider<DiarioViewModel>(
           create: (ctx) => DiarioViewModel(
             repository: diarioRepository,
@@ -102,10 +107,14 @@ class NutriLensApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleProvider>().locale;
     return MaterialApp(
       title: 'NutriLens AI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: const MainShellScreen(),
       builder: (context, child) =>
           DesktopWrapper(child: child ?? const SizedBox()),

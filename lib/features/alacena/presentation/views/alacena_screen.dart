@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -26,6 +27,7 @@ class AlacenaScreen extends StatelessWidget {
   }
 
   void _mostrarOpcionesCategoria(BuildContext context, CategoriaAlacena cat) {
+    final l10n = context.l10n;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -56,7 +58,7 @@ class AlacenaScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    cat.label,
+                    localizedCategoriaLabel(cat, l10n),
                     style: AppTextStyles.title(
                       size: 16,
                       weight: FontWeight.w800,
@@ -84,7 +86,7 @@ class AlacenaScreen extends StatelessWidget {
                 ),
               ),
               title: Text(
-                'Editar nombre e ícono',
+                l10n.pantryEditCatTitle,
                 style: AppTextStyles.body(size: 13.5, weight: FontWeight.w700),
               ),
               onTap: () async {
@@ -116,7 +118,7 @@ class AlacenaScreen extends StatelessWidget {
                 ),
               ),
               title: Text(
-                'Eliminar categoría',
+                l10n.pantryDeleteCatTitle,
                 style: AppTextStyles.body(
                   size: 13.5,
                   weight: FontWeight.w700,
@@ -124,7 +126,7 @@ class AlacenaScreen extends StatelessWidget {
                 ),
               ),
               subtitle: Text(
-                'Los ingredientes pasarán a "Otros"',
+                l10n.pantryDeleteCatSubtitle,
                 style: AppTextStyles.body(
                   size: 11.5,
                   color: AppColors.textMuted,
@@ -145,11 +147,13 @@ class AlacenaScreen extends StatelessWidget {
     BuildContext context,
     CategoriaAlacena cat,
   ) async {
+    final l10n = context.l10n;
     final confirmado = await ConfirmDeleteDialog.show(
       context,
-      titulo: '¿Eliminar "${cat.label}"?',
-      mensaje:
-          'Esta categoría se quitará de tus filtros y los alimentos asociados se moverán a la categoría "Otros".',
+      titulo: l10n.pantryDeleteCatConfirmTitle(
+        localizedCategoriaLabel(cat, l10n),
+      ),
+      mensaje: l10n.pantryDeleteCatConfirmMsg,
     );
     if (confirmado && context.mounted) {
       context.read<AlacenaViewModel>().eliminarCategoria(cat.id);
@@ -158,6 +162,7 @@ class AlacenaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final vm = context.watch<AlacenaViewModel>();
     final items = vm.ingredientesFiltrados;
 
@@ -190,7 +195,7 @@ class AlacenaScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'La IA prioriza estos ingredientes al registrar tus comidas con foto, para calcular calorías y macros exactas.',
+                      l10n.pantryInfoBanner,
                       style: AppTextStyles.body(
                         size: 11.5,
                         weight: FontWeight.w600,
@@ -263,6 +268,7 @@ class _AgregarIngredienteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final bool tieneQuery = query.trim().isNotEmpty;
 
     return GestureDetector(
@@ -307,8 +313,8 @@ class _AgregarIngredienteCard extends StatelessWidget {
                 children: [
                   Text(
                     tieneQuery
-                        ? 'Sumar "$query" a tu alacena'
-                        : 'Agregar nuevo ingrediente',
+                        ? l10n.pantryAddSpecific(query)
+                        : l10n.pantryAddNew,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.title(
@@ -319,7 +325,7 @@ class _AgregarIngredienteCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Tocá para cargar porción o escanear',
+                    l10n.pantryAddSubtitle,
                     style: AppTextStyles.body(
                       size: 11.5,
                       color: AppColors.textMuted,
@@ -354,6 +360,7 @@ class _AlacenaHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       decoration: const BoxDecoration(
@@ -366,7 +373,7 @@ class _AlacenaHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Mi Alacena',
+              l10n.pantryTitle,
               style: AppTextStyles.title(
                 size: 20,
                 weight: FontWeight.w800,
@@ -375,7 +382,7 @@ class _AlacenaHeader extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '$totalIngredientes ingredientes activos',
+              l10n.pantryActiveCount(totalIngredientes),
               style: AppTextStyles.body(
                 size: 13,
                 color: AppColors.textMutedLight,
@@ -434,7 +441,7 @@ class _SearchBarState extends State<_SearchBar> {
         onChanged: widget.onChanged,
         style: AppTextStyles.body(size: 13.5, weight: FontWeight.w600),
         decoration: InputDecoration(
-          hintText: 'Buscar alimento o marca...',
+          hintText: context.l10n.pantrySearchHint,
           hintStyle: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.7),
             fontSize: 13,

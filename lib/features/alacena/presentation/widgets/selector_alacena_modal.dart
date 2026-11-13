@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/categoria_alacena.dart';
@@ -55,6 +56,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final allIngredients = context
         .select<AlacenaViewModel, List<IngredienteAlacena>>(
           (vm) => vm.todosLosIngredientes,
@@ -101,7 +103,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'SELECCIONAR DE ALACENA',
+                      l10n.selectPantryTitle,
                       style: AppTextStyles.title(
                         size: 15,
                         weight: FontWeight.w800,
@@ -122,7 +124,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                     weight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Buscar por nombre o marca...',
+                    hintText: l10n.selectPantrySearchHint,
                     hintStyle: TextStyle(
                       color: AppColors.textMuted.withValues(alpha: 0.7),
                       fontSize: 13,
@@ -178,7 +180,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'No encontramos este ingrediente',
+                            l10n.selectPantryNotFound,
                             style: AppTextStyles.body(
                               size: 14,
                               weight: FontWeight.w800,
@@ -186,7 +188,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Podés sumarlo ahora mismo a tu alacena.',
+                            l10n.selectPantryNotFoundSub,
                             style: AppTextStyles.body(
                               size: 12.5,
                               color: AppColors.textMuted,
@@ -204,7 +206,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                             ),
                             icon: const Icon(Icons.add_rounded, size: 18),
                             label: Text(
-                              'Crear ingrediente',
+                              l10n.selectPantryCreateBtn,
                               style: AppTextStyles.body(
                                 size: 13,
                                 weight: FontWeight.w800,
@@ -246,7 +248,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
               ),
               icon: const Icon(Icons.add_rounded),
               label: Text(
-                'Nuevo ingrediente manual',
+                l10n.selectPantryManualNewBtn,
                 style: AppTextStyles.body(size: 13.5, weight: FontWeight.w800),
               ),
               onPressed: () => AgregarIngredienteSheet.show(context),

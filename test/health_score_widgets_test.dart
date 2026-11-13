@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nutrilens_provider/l10n/app_localizations.dart';
 import 'package:nutrilens_provider/core/failures/scanner_failure.dart';
 import 'package:nutrilens_provider/features/alacena/presentation/viewmodels/alacena_viewmodel.dart';
 import 'package:nutrilens_provider/features/alacena/data/repositories/alacena_repository_impl.dart';
@@ -26,7 +27,10 @@ class _WidgetMealHealthRepo implements MealHealthRepository {
   onEvaluate;
 
   @override
-  Future<MealHealthResult> evaluateMealHealth(MealHealthEvaluationInput input) {
+  Future<MealHealthResult> evaluateMealHealth(
+    MealHealthEvaluationInput input, {
+    String languageCode = 'es',
+  }) {
     calls++;
     if (onEvaluate != null) {
       return onEvaluate!(input);
@@ -53,6 +57,9 @@ void main() {
         // 1. Unscored (?/100)
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Center(
                 child: HealthScoreBadge(healthScore: null, onTap: () => taps++),
@@ -70,6 +77,9 @@ void main() {
         // 2. Loading (Calculando, taps disabled)
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Center(
                 child: HealthScoreBadge(
@@ -89,6 +99,9 @@ void main() {
         // 3. Fresh scored
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Center(
                 child: HealthScoreBadge(healthScore: 88, onTap: () => taps++),
@@ -102,6 +115,9 @@ void main() {
         // 4. Stale scored
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Center(
                 child: HealthScoreBadge(
@@ -120,6 +136,9 @@ void main() {
         // 5. Error state
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Center(
                 child: HealthScoreBadge(
@@ -162,6 +181,9 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: HealthScoreDetailSheet(
                 listenable: notifier,
@@ -222,6 +244,9 @@ void main() {
         int emptyCalls = 0;
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: HealthScoreDetailSheet(
                 listenable: emptyNotifier,
@@ -252,6 +277,9 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: HealthScoreDetailSheet(
                 listenable: staleNotifier,
@@ -277,7 +305,12 @@ void main() {
         );
         await tester.pump();
         expect(find.text('Reintentar'), findsOneWidget);
-        expect(find.text('Sin conexión para evaluar.'), findsOneWidget);
+        expect(
+          find.text(
+            'Error de conexión. Verificá tu acceso a internet e intentá nuevamente.',
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Puntaje actual conservado: 74/100'), findsOneWidget);
       },
     );
@@ -299,6 +332,9 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: MealCardWidget(
                 comida: unscored,
@@ -348,6 +384,9 @@ void main() {
             ChangeNotifierProvider<DiarioViewModel>.value(
               value: diarioVm,
               child: MaterialApp(
+                locale: const Locale('es'),
+                supportedLocales: AppLocalizations.supportedLocales,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
                 home: Scaffold(
                   body: DetalleComidaSheet(comida: meal, onDelete: () {}),
                 ),
@@ -423,6 +462,9 @@ void main() {
                 ),
               ],
               child: MaterialApp(
+                locale: const Locale('es'),
+                supportedLocales: AppLocalizations.supportedLocales,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
                 home: Scaffold(
                   body: Builder(
                     builder: (ctx) => ElevatedButton(

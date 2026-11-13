@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nutrilens_provider/l10n/app_localizations.dart';
 import 'package:nutrilens_provider/features/alacena/data/repositories/alacena_repository_impl.dart';
 import 'package:nutrilens_provider/features/alacena/domain/entities/categoria_alacena.dart';
 import 'package:nutrilens_provider/features/alacena/presentation/viewmodels/alacena_viewmodel.dart';
@@ -17,6 +18,9 @@ void main() {
         ChangeNotifierProvider<AlacenaViewModel>.value(
           value: alacenaVM,
           child: MaterialApp(
+            locale: const Locale('es'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(

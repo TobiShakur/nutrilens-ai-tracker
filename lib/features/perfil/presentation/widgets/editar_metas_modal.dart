@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/configuracion_nutricional.dart';
@@ -74,6 +75,7 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
+    final l10n = context.l10n;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 14, 20, 20 + bottomInset),
       decoration: const BoxDecoration(
@@ -99,7 +101,7 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'MODIFICAR METAS DIARIAS',
+                l10n.editGoalsTitle,
                 style: AppTextStyles.title(size: 15, weight: FontWeight.w800),
               ),
               IconButton(
@@ -111,8 +113,8 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
           const SizedBox(height: 14),
           _buildInput(
             controller: _kcalCtrl,
-            label: 'Calorías diarias objetivo',
-            suffix: 'kcal',
+            label: l10n.editGoalsDailyKcal,
+            suffix: l10n.kcalUnit,
           ),
           const SizedBox(height: 12),
           Row(
@@ -120,7 +122,7 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
               Expanded(
                 child: _buildInput(
                   controller: _pCtrl,
-                  label: 'Proteínas',
+                  label: l10n.macroProtein,
                   suffix: 'g',
                 ),
               ),
@@ -128,7 +130,7 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
               Expanded(
                 child: _buildInput(
                   controller: _cCtrl,
-                  label: 'Carbos',
+                  label: l10n.macroCarbs,
                   suffix: 'g',
                 ),
               ),
@@ -136,7 +138,7 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
               Expanded(
                 child: _buildInput(
                   controller: _gCtrl,
-                  label: 'Grasas',
+                  label: l10n.macroFat,
                   suffix: 'g',
                 ),
               ),
@@ -154,7 +156,7 @@ class _EditarMetasModalState extends State<EditarMetasModal> {
             ),
             onPressed: _guardar,
             child: Text(
-              'Actualizar metas',
+              l10n.editGoalsUpdateBtn,
               style: AppTextStyles.body(
                 size: 14,
                 weight: FontWeight.w800,

@@ -38,7 +38,10 @@ class _ControlledHealthRepo implements MealHealthRepository {
   onEvaluate;
 
   @override
-  Future<MealHealthResult> evaluateMealHealth(MealHealthEvaluationInput input) {
+  Future<MealHealthResult> evaluateMealHealth(
+    MealHealthEvaluationInput input, {
+    String languageCode = 'es',
+  }) {
     callCount++;
     if (onEvaluate != null) {
       return onEvaluate!(input);

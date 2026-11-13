@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/diario_dia.dart';
@@ -22,6 +23,7 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final vm = context.watch<DiarioViewModel>();
     final dia = vm.diaActual;
 
@@ -40,7 +42,7 @@ class DashboardScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
             child: Text(
-              'COMIDAS · ${dia.cantidadComidas}',
+              l10n.mealsCountLabel(dia.cantidadComidas),
               style: AppTextStyles.title(size: 14.5, weight: FontWeight.w700),
             ),
           ),
@@ -61,13 +63,16 @@ class DashboardScreen extends StatelessWidget {
                   hasScoreError: evalState is HealthScoreEvalError,
                   onScoreTap: () {
                     final diarioVM = context.read<DiarioViewModel>();
+                    final lang = context.activeLanguageCode;
                     HealthScoreDetailSheet.show(
                       context,
                       listenable: diarioVM,
                       readSnapshot: () =>
                           diarioVM.healthScoreSnapshotFor(comida.id),
-                      onEvaluate: () =>
-                          diarioVM.evaluarHealthScoreComida(comida.id),
+                      onEvaluate: () => diarioVM.evaluarHealthScoreComida(
+                        comida.id,
+                        languageCode: lang,
+                      ),
                     );
                   },
                   onTap: () => DetalleComidaSheet.show(
@@ -110,7 +115,9 @@ class _HeroCard extends StatelessWidget {
             const _Header(),
             const SizedBox(height: 16),
             WeekSelector(
-              nombres: vm.nombresDias,
+              nombres: vm.todosLosDias
+                  .map((d) => localizedDiaPill(d, context.l10n))
+                  .toList(),
               seleccionado: vm.diaSeleccionadoIndex,
               onSelected: context.read<DiarioViewModel>().seleccionarDia,
             ),
@@ -145,15 +152,16 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final racha = context.select<DiarioViewModel, int>((vm) => vm.rachaDias);
 
     final String textoRacha;
     if (racha == 0) {
-      textoRacha = 'Sin racha';
+      textoRacha = l10n.streakNone;
     } else if (racha == 1) {
-      textoRacha = '1 día de racha';
+      textoRacha = l10n.streakOneDay;
     } else {
-      textoRacha = '$racha días de racha';
+      textoRacha = l10n.streakManyDays(racha);
     }
 
     return Row(
@@ -172,7 +180,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Buen día,',
+                l10n.greetingGoodDay,
                 style: AppTextStyles.body(
                   size: 13,
                   color: AppColors.textMutedLight,
@@ -242,12 +250,12 @@ class _EmptyDayCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Todavía no hay comidas este día',
+            context.l10n.noMealsThisDay,
             style: AppTextStyles.body(size: 14.5, weight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
-            'Tocá "Sumar comida" para ver cómo se actualizan tus números.',
+            context.l10n.noMealsThisDayHint,
             textAlign: TextAlign.center,
             style: AppTextStyles.body(size: 13, color: AppColors.textMuted),
           ),

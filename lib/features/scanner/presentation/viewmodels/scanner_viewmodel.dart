@@ -27,6 +27,7 @@ class ScannerViewModel extends ChangeNotifier {
   ScannerState _state = const ScannerIdle();
   bool _preferirAlacena = true;
   bool _disposed = false;
+  String _lastLanguageCode = 'es';
 
   ScannerViewModel({
     required this.repository,
@@ -86,9 +87,12 @@ class ScannerViewModel extends ChangeNotifier {
   Future<bool> capturarYAnalizar({
     required List<IngredienteAlacena> alacenaUsuario,
     Future<ImagenPlato?> Function()? liveCapture,
+    String languageCode = 'es',
   }) {
+    _lastLanguageCode = languageCode;
     return _captureAndAnalyze(
       alacenaUsuario: alacenaUsuario,
+      languageCode: languageCode,
       capture: () async {
         if (liveCapture != null) {
           final liveImage = await liveCapture();
@@ -102,9 +106,12 @@ class ScannerViewModel extends ChangeNotifier {
   /// Picks an image from the gallery and runs AI dish analysis.
   Future<bool> seleccionarGaleriaYAnalizar({
     required List<IngredienteAlacena> alacenaUsuario,
+    String languageCode = 'es',
   }) {
+    _lastLanguageCode = languageCode;
     return _captureAndAnalyze(
       alacenaUsuario: alacenaUsuario,
+      languageCode: languageCode,
       capture: () async => imageCaptureService?.seleccionarDeGaleria(),
     );
   }
@@ -112,6 +119,7 @@ class ScannerViewModel extends ChangeNotifier {
   Future<bool> _captureAndAnalyze({
     required List<IngredienteAlacena> alacenaUsuario,
     required Future<ImagenPlato?> Function() capture,
+    String languageCode = 'es',
   }) async {
     if (isBusy || _disposed) return false;
 
@@ -128,7 +136,7 @@ class ScannerViewModel extends ChangeNotifier {
         return false;
       }
 
-      return _analyzeImage(img, alacenaUsuario);
+      return _analyzeImage(img, alacenaUsuario, languageCode: languageCode);
     } on ScannerFailure catch (failure) {
       if (_disposed) return false;
       _state = _mapFailure(failure, imagen: null);
@@ -153,11 +161,14 @@ class ScannerViewModel extends ChangeNotifier {
   /// Re-runs AI analysis using the photo retained inside [ScannerError].
   Future<bool> reintentarAnalisis({
     required List<IngredienteAlacena> alacenaUsuario,
+    String? languageCode,
   }) async {
     if (isBusy || _disposed) return false;
     final current = _state;
     if (current is ScannerError && current.imagen != null) {
-      return _analyzeImage(current.imagen!, alacenaUsuario);
+      final lang = languageCode ?? _lastLanguageCode;
+      _lastLanguageCode = lang;
+      return _analyzeImage(current.imagen!, alacenaUsuario, languageCode: lang);
     }
     if (current is! ScannerIdle) {
       _state = const ScannerIdle();
@@ -168,8 +179,9 @@ class ScannerViewModel extends ChangeNotifier {
 
   Future<bool> _analyzeImage(
     ImagenPlato imagen,
-    List<IngredienteAlacena> alacenaUsuario,
-  ) async {
+    List<IngredienteAlacena> alacenaUsuario, {
+    String languageCode = 'es',
+  }) async {
     _state = ScannerAnalyzing(imagen: imagen);
     _notifySafe();
 
@@ -178,6 +190,7 @@ class ScannerViewModel extends ChangeNotifier {
         imagen: imagen,
         preferirAlacena: _preferirAlacena,
         alacenaUsuario: alacenaUsuario,
+        languageCode: languageCode,
       );
       if (_disposed) return false;
 
@@ -224,7 +237,10 @@ class ScannerViewModel extends ChangeNotifier {
   /// Evaluates or refreshes the active dish's Health Score on demand via Gemini.
   ///
   /// Drops stale responses if the dish is replaced or edited while in flight.
-  Future<bool> evaluarHealthScore({String? titulo}) async {
+  Future<bool> evaluarHealthScore({
+    String? titulo,
+    String languageCode = 'es',
+  }) async {
     final current = _state;
     if (_disposed ||
         current is! ScannerSuccess ||
@@ -245,7 +261,10 @@ class ScannerViewModel extends ChangeNotifier {
     );
     _notifySafe();
 
-    final result = await _evaluateMealHealthUseCase(input);
+    final result = await _evaluateMealHealthUseCase(
+      input,
+      languageCode: languageCode,
+    );
     if (_disposed) return false;
 
     final latest = _state;
@@ -465,6 +484,9 @@ class ScannerViewModel extends ChangeNotifier {
           ? 'Necesitamos permiso de cámara para escanear el plato.'
           : 'Necesitamos permiso de galería para elegir una foto.',
       type: ScannerErrorType.permissionDenied,
+      detail: esCamara
+          ? ScannerErrorDetail.cameraPermission
+          : ScannerErrorDetail.galleryPermission,
       imagen: imagen,
     );
   }
@@ -483,6 +505,7 @@ class ScannerViewModel extends ChangeNotifier {
       ScannerMissingImageFailure() => ScannerError(
         message: 'No se recibió ninguna imagen para analizar.',
         type: ScannerErrorType.invalidImage,
+        detail: ScannerErrorDetail.missingImage,
         imagen: imagen,
       ),
       ScannerInvalidImageFailure(:final reason) => ScannerError(
@@ -494,6 +517,12 @@ class ScannerViewModel extends ChangeNotifier {
           _ => 'La imagen seleccionada no es válida.',
         },
         type: ScannerErrorType.invalidImage,
+        detail: switch (reason) {
+          'empty' => ScannerErrorDetail.emptyImage,
+          'size_exceeded' => ScannerErrorDetail.tooLargeImage,
+          'unsupported_mime' => ScannerErrorDetail.unsupportedFormat,
+          _ => ScannerErrorDetail.none,
+        },
         imagen: imagen,
       ),
       ScannerPermissionDeniedFailure(:final isCamera) => _mapPermissionFailure(
@@ -534,12 +563,14 @@ class ScannerViewModel extends ChangeNotifier {
         message:
             'No pudimos reconocer alimentos en la foto. Probá más de cerca o con mejor luz.',
         type: ScannerErrorType.noFoodDetected,
+        detail: ScannerErrorDetail.noFoodDetected,
         imagen: imagen,
       ),
       ScannerEmptyIngredientsFailure() => ScannerError(
         message:
             'Agregá al menos un ingrediente para calcular el Health Score.',
         type: ScannerErrorType.noFoodDetected,
+        detail: ScannerErrorDetail.emptyIngredients,
         imagen: imagen,
       ),
     };

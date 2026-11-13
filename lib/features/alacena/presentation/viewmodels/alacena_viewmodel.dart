@@ -166,26 +166,37 @@ class AlacenaViewModel extends ChangeNotifier {
   }) async {
     final nombreLimpio = nombre.trim();
     if (nombreLimpio.isEmpty) {
-      return const AlacenaFallo('El nombre del ingrediente es obligatorio.');
+      return const AlacenaFallo(
+        'El nombre del ingrediente es obligatorio.',
+        code: AlacenaErrorCode.emptyName,
+      );
     }
 
     if (categoria == CategoriaAlacena.todos) {
-      return const AlacenaFallo('Seleccioná una categoría nutricional válida.');
+      return const AlacenaFallo(
+        'Seleccioná una categoría nutricional válida.',
+        code: AlacenaErrorCode.invalidCategory,
+      );
     }
 
     if (gramosPorcion <= 0) {
       return const AlacenaFallo(
         'El tamaño de porción debe ser mayor a 0 gramos.',
+        code: AlacenaErrorCode.nonPositiveGrams,
       );
     }
 
     if (calorias < 0) {
-      return const AlacenaFallo('Las calorías no pueden ser negativas.');
+      return const AlacenaFallo(
+        'Las calorías no pueden ser negativas.',
+        code: AlacenaErrorCode.negativeCalories,
+      );
     }
 
     if (proteinas < 0 || carbohidratos < 0 || grasas < 0) {
       return const AlacenaFallo(
         'Los macros no pueden tener valores negativos.',
+        code: AlacenaErrorCode.negativeMacros,
       );
     }
 
@@ -230,26 +241,37 @@ class AlacenaViewModel extends ChangeNotifier {
 
     final nombreLimpio = nombre.trim();
     if (nombreLimpio.isEmpty) {
-      return const AlacenaFallo('El nombre del ingrediente es obligatorio.');
+      return const AlacenaFallo(
+        'El nombre del ingrediente es obligatorio.',
+        code: AlacenaErrorCode.emptyName,
+      );
     }
 
     if (categoria == CategoriaAlacena.todos) {
-      return const AlacenaFallo('Seleccioná una categoría nutricional válida.');
+      return const AlacenaFallo(
+        'Seleccioná una categoría nutricional válida.',
+        code: AlacenaErrorCode.invalidCategory,
+      );
     }
 
     if (gramosPorcion <= 0) {
       return const AlacenaFallo(
         'El tamaño de porción debe ser mayor a 0 gramos.',
+        code: AlacenaErrorCode.nonPositiveGrams,
       );
     }
 
     if (calorias < 0) {
-      return const AlacenaFallo('Las calorías no pueden ser negativas.');
+      return const AlacenaFallo(
+        'Las calorías no pueden ser negativas.',
+        code: AlacenaErrorCode.negativeCalories,
+      );
     }
 
     if (proteinas < 0 || carbohidratos < 0 || grasas < 0) {
       return const AlacenaFallo(
         'Los macros no pueden tener valores negativos.',
+        code: AlacenaErrorCode.negativeMacros,
       );
     }
 

@@ -9,5 +9,6 @@ abstract class ScannerRepository {
     required ImagenPlato imagen,
     required bool preferirAlacena,
     required List<IngredienteAlacena> alacenaUsuario,
+    String languageCode = 'es',
   });
 }

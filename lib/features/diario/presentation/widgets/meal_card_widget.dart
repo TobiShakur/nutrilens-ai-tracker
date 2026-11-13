@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -25,6 +26,8 @@ class MealCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final mealDisplayName = localizedMealType(comida.encabezadoTipo, l10n);
     return Dismissible(
       key: Key('meal_card_${comida.id}'),
       direction: DismissDirection.endToStart,
@@ -46,7 +49,7 @@ class MealCardWidget extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Eliminar',
+              l10n.delete,
               style: AppTextStyles.body(
                 size: 13,
                 weight: FontWeight.w800,
@@ -59,8 +62,8 @@ class MealCardWidget extends StatelessWidget {
       confirmDismiss: (_) async {
         return await ConfirmDeleteDialog.show(
           context,
-          titulo: '¿Eliminar comida?',
-          mensaje: 'Se eliminará "${comida.encabezadoTipo}" de tus comidas.',
+          titulo: l10n.deleteMealTitle,
+          mensaje: l10n.deleteMealMessage(mealDisplayName),
         );
       },
       onDismissed: (_) => onDelete(),
@@ -103,7 +106,7 @@ class MealCardWidget extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                comida.encabezadoTipo,
+                                mealDisplayName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: AppTextStyles.title(

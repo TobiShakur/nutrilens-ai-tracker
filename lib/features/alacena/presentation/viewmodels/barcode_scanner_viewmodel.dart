@@ -42,19 +42,29 @@ class BarcodeScannerViewModel extends ChangeNotifier {
     _notificarSeguro();
   }
 
-  Future<void> capturarConCamara() =>
-      _ejecutarCapturaImagen(imageCaptureService.capturarConCamara);
+  Future<void> capturarConCamara({String languageCode = 'es'}) =>
+      _ejecutarCapturaImagen(
+        imageCaptureService.capturarConCamara,
+        languageCode: languageCode,
+      );
 
-  Future<void> seleccionarDeGaleria() =>
-      _ejecutarCapturaImagen(imageCaptureService.seleccionarDeGaleria);
+  Future<void> seleccionarDeGaleria({String languageCode = 'es'}) =>
+      _ejecutarCapturaImagen(
+        imageCaptureService.seleccionarDeGaleria,
+        languageCode: languageCode,
+      );
 
   Future<void> _ejecutarCapturaImagen(
-    Future<ImagenPlato?> Function() selector,
-  ) async {
+    Future<ImagenPlato?> Function() selector, {
+    String languageCode = 'es',
+  }) async {
     // Guardia anti doble-tap antes del primer await.
     if (_state is BarcodeScannerLoading || _disposed) return;
 
-    _state = const BarcodeScannerLoading(mensaje: 'Abriendo...');
+    _state = const BarcodeScannerLoading(
+      mensaje: 'Abriendo...',
+      step: BarcodeLoadingStep.openingPicker,
+    );
     _notificarSeguro();
 
     try {
@@ -77,12 +87,16 @@ class BarcodeScannerViewModel extends ChangeNotifier {
         return;
       }
 
-      _state = const BarcodeScannerLoading(mensaje: 'Analizando producto...');
+      _state = const BarcodeScannerLoading(
+        mensaje: 'Analizando producto...',
+        step: BarcodeLoadingStep.analyzingLabel,
+      );
       _notificarSeguro();
 
       final producto = await barcodeService.analizarFotoEtiqueta(
         bytes: imagen.bytes,
         mimeType: imagen.mimeType,
+        languageCode: languageCode,
       );
       if (_disposed) return;
 
@@ -91,6 +105,7 @@ class BarcodeScannerViewModel extends ChangeNotifier {
           mensaje:
               'No se pudo detectar un producto legible. Probá enfocando mejor la tabla nutricional o el código.',
           tipo: BarcodeErrorTipo.noEncontrado,
+          code: BarcodeErrorCode.labelNotFound,
         );
       } else {
         _state = BarcodeScannerSuccess(producto: producto);
@@ -105,12 +120,16 @@ class BarcodeScannerViewModel extends ChangeNotifier {
       _state = const BarcodeScannerError(
         mensaje: 'No se pudo procesar la imagen. Intentá nuevamente.',
         tipo: BarcodeErrorTipo.desconocido,
+        code: BarcodeErrorCode.unknown,
       );
       _notificarSeguro();
     }
   }
 
-  Future<void> buscarPorCodigoBarras(String codigoRaw) async {
+  Future<void> buscarPorCodigoBarras(
+    String codigoRaw, {
+    String languageCode = 'es',
+  }) async {
     if (_state is BarcodeScannerLoading || _disposed) return;
 
     final limpio = BarcodeValidator.limpiar(codigoRaw);
@@ -118,6 +137,7 @@ class BarcodeScannerViewModel extends ChangeNotifier {
       _state = const BarcodeScannerError(
         mensaje: 'Ingresá los números del código de barras.',
         tipo: BarcodeErrorTipo.codigoInvalido,
+        code: BarcodeErrorCode.missingBarcode,
       );
       _notificarSeguro();
       return;
@@ -127,16 +147,23 @@ class BarcodeScannerViewModel extends ChangeNotifier {
       _state = const BarcodeScannerError(
         mensaje: 'El código de barras ingresado no es válido.',
         tipo: BarcodeErrorTipo.codigoInvalido,
+        code: BarcodeErrorCode.invalidBarcode,
       );
       _notificarSeguro();
       return;
     }
 
-    _state = const BarcodeScannerLoading(mensaje: 'Buscando producto...');
+    _state = const BarcodeScannerLoading(
+      mensaje: 'Buscando producto...',
+      step: BarcodeLoadingStep.lookingUpBarcode,
+    );
     _notificarSeguro();
 
     try {
-      final data = await barcodeService.buscarPorCodigoBarras(limpio);
+      final data = await barcodeService.buscarPorCodigoBarras(
+        limpio,
+        languageCode: languageCode,
+      );
       if (_disposed) return;
 
       if (data == null) {
@@ -144,6 +171,8 @@ class BarcodeScannerViewModel extends ChangeNotifier {
           mensaje:
               'No encontramos el producto con código $limpio en la base de datos.',
           tipo: BarcodeErrorTipo.noEncontrado,
+          code: BarcodeErrorCode.productNotFound,
+          barcode: limpio,
         );
       } else {
         _state = BarcodeScannerSuccess(producto: data);
@@ -158,6 +187,7 @@ class BarcodeScannerViewModel extends ChangeNotifier {
       _state = const BarcodeScannerError(
         mensaje: 'No se pudo consultar el producto. Intentá nuevamente.',
         tipo: BarcodeErrorTipo.desconocido,
+        code: BarcodeErrorCode.unknown,
       );
       _notificarSeguro();
     }
@@ -179,10 +209,12 @@ class BarcodeScannerViewModel extends ChangeNotifier {
         mensaje:
             'La función con IA requiere configurar GEMINI_API_KEY en este entorno.',
         tipo: BarcodeErrorTipo.sinApiKey,
+        code: BarcodeErrorCode.missingApiKey,
       ),
       BarcodeCodigoInvalidoFailure() => const BarcodeScannerError(
         mensaje: 'El código de barras ingresado no es válido.',
         tipo: BarcodeErrorTipo.codigoInvalido,
+        code: BarcodeErrorCode.invalidBarcode,
       ),
       BarcodeImagenInvalidaFailure(:final razon) => BarcodeScannerError(
         mensaje: switch (razon) {
@@ -193,37 +225,51 @@ class BarcodeScannerViewModel extends ChangeNotifier {
           _ => 'La imagen seleccionada no es válida.',
         },
         tipo: BarcodeErrorTipo.imagenInvalida,
+        code: switch (razon) {
+          'vacia' => BarcodeErrorCode.emptyImage,
+          'tamano_excedido' => BarcodeErrorCode.tooLargeImage,
+          'mime_no_soportado' => BarcodeErrorCode.unsupportedMime,
+          _ => BarcodeErrorCode.emptyImage,
+        },
       ),
       BarcodePermisoDenegadoFailure(:final esCamara) => BarcodeScannerError(
         mensaje: esCamara
             ? 'Necesitamos permiso de cámara para escanear la etiqueta.'
             : 'Necesitamos permiso de galería para elegir una foto.',
         tipo: BarcodeErrorTipo.permisoDenegado,
+        code: esCamara
+            ? BarcodeErrorCode.cameraPermission
+            : BarcodeErrorCode.galleryPermission,
       ),
       BarcodeRedFailure() => const BarcodeScannerError(
         mensaje:
             'Error de conexión. Verificá tu acceso a internet e intentá nuevamente.',
         tipo: BarcodeErrorTipo.red,
+        code: BarcodeErrorCode.network,
       ),
       BarcodeTimeoutFailure() => const BarcodeScannerError(
         mensaje:
             'La consulta tardó demasiado. Intentá nuevamente en unos segundos.',
         tipo: BarcodeErrorTipo.timeout,
+        code: BarcodeErrorCode.timeout,
       ),
       BarcodeRateLimitFailure() => const BarcodeScannerError(
         mensaje:
             'Alcanzamos el límite temporal de consultas. Esperá un momento e intentá de nuevo.',
         tipo: BarcodeErrorTipo.rateLimit,
+        code: BarcodeErrorCode.rateLimit,
       ),
       BarcodeApiNoDisponibleFailure() => const BarcodeScannerError(
         mensaje:
             'El servicio de productos no está disponible en este momento. Probá más tarde.',
         tipo: BarcodeErrorTipo.servicioNoDisponible,
+        code: BarcodeErrorCode.serviceUnavailable,
       ),
       BarcodeRespuestaInvalidaFailure() => const BarcodeScannerError(
         mensaje:
             'No pudimos interpretar la respuesta del servicio. Intentá nuevamente.',
         tipo: BarcodeErrorTipo.desconocido,
+        code: BarcodeErrorCode.invalidResponse,
       ),
     };
   }

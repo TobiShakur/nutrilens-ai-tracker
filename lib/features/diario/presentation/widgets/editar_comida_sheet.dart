@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -116,29 +117,33 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
     context.read<DiarioViewModel>().actualizarComida(comidaActualizada);
     Navigator.pop(context); // Cierra editor
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.forestDark,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          content: Text(
-            'Comida modificada ($totalIngredientes ingredientes · $totalCalorias kcal)',
-            style: AppTextStyles.body(
-              size: 13,
-              weight: FontWeight.w700,
-              color: Colors.white,
+    if (mounted) {
+      final l10n = context.l10n;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.forestDark,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            content: Text(
+              l10n.mealUpdatedSnackbar(totalIngredientes, totalCalorias),
+              style: AppTextStyles.body(
+                size: 13,
+                weight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
-        ),
-      );
+        );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final vm = _resolveViewModel(context);
     final ingredientes = vm.ingredientes;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -173,7 +178,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Modificar comida',
+                      l10n.editMealTitle,
                       style: AppTextStyles.title(
                         size: 17,
                         weight: FontWeight.w800,
@@ -182,7 +187,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Ajustá ingredientes, porciones en gramos y macros.',
+                      l10n.editMealSubtitle,
                       style: AppTextStyles.body(
                         size: 12,
                         color: AppColors.textMutedAccessible,
@@ -197,12 +202,15 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                 isStale: vm.healthScoreDesactualizado,
                 isLoading: vm.healthScoreEvalState is HealthScoreEvaluating,
                 hasError: vm.healthScoreEvalState is HealthScoreEvalError,
-                onTap: () => HealthScoreDetailSheet.show(
-                  context,
-                  listenable: vm,
-                  readSnapshot: () => vm.healthScoreSnapshot,
-                  onEvaluate: vm.evaluarHealthScore,
-                ),
+                onTap: () {
+                  final lang = context.activeLanguageCode;
+                  HealthScoreDetailSheet.show(
+                    context,
+                    listenable: vm,
+                    readSnapshot: () => vm.healthScoreSnapshot,
+                    onEvaluate: () => vm.evaluarHealthScore(languageCode: lang),
+                  );
+                },
               ),
             ],
           ),
@@ -218,7 +226,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                 final tipo = EditarComidaViewModel.availableMealTypes[index];
                 final activo = tipo == vm.tipoComida;
                 return ChoiceChip(
-                  label: Text(tipo),
+                  label: Text(localizedMealType(tipo, l10n)),
                   selected: activo,
                   showCheckmark: false,
                   onSelected: (val) {
@@ -255,7 +263,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'No hay ingredientes en esta comida',
+                          l10n.editMealNoIngredients,
                           style: AppTextStyles.body(
                             size: 13,
                             color: AppColors.textMuted,
@@ -351,13 +359,15 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                                 color: AppColors.alertRed,
                               ),
                               onPressed: () async {
-                                final confirmar = await ConfirmDeleteDialog.show(
-                                  context,
-                                  titulo: '¿Quitar ingrediente?',
-                                  mensaje:
-                                      'Se quitará "${item.nombreConMarca}" de esta comida.',
-                                  textoConfirmar: 'Quitar',
-                                );
+                                final confirmar =
+                                    await ConfirmDeleteDialog.show(
+                                      context,
+                                      titulo: l10n.removeIngredientTitle,
+                                      mensaje: l10n.removeIngredientMessage(
+                                        item.nombreConMarca,
+                                      ),
+                                      textoConfirmar: l10n.remove,
+                                    );
                                 if (confirmar && mounted) {
                                   vm.eliminarIngrediente(index);
                                 }
@@ -382,7 +392,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
             ),
             icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
             label: Text(
-              'Agregar ingrediente desde Mi Alacena',
+              l10n.addIngredientFromPantry,
               style: AppTextStyles.body(
                 size: 13,
                 weight: FontWeight.w800,
@@ -406,7 +416,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'TOTAL RECALCULADO',
+                      l10n.recalculatedTotal,
                       style: AppTextStyles.body(
                         size: 10.5,
                         weight: FontWeight.w700,
@@ -414,7 +424,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                       ),
                     ),
                     Text(
-                      '${vm.totalCalorias} kcal',
+                      '${vm.totalCalorias} ${l10n.kcalUnit}',
                       style: AppTextStyles.number(
                         size: 18,
                         weight: FontWeight.w900,
@@ -424,7 +434,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                   ],
                 ),
                 Text(
-                  'P ${vm.totalProteinas.round()}g · C ${vm.totalCarbos.round()}g · G ${vm.totalGrasas.round()}g',
+                  '${l10n.macroProteinShort[0]} ${vm.totalProteinas.round()}g · ${l10n.macroCarbsShort[0]} ${vm.totalCarbos.round()}g · ${l10n.macroFatShort[0]} ${vm.totalGrasas.round()}g',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -449,7 +459,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
               ),
               onPressed: () => _guardar(vm),
               child: Text(
-                'Guardar cambios',
+                l10n.saveChanges,
                 style: AppTextStyles.body(
                   size: 14,
                   weight: FontWeight.w800,
@@ -494,11 +504,12 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AlertDialog(
       backgroundColor: AppColors.cardWhite,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        'Cantidad en gramos',
+        l10n.gramsAmountTitle,
         style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
       ),
       content: Column(
@@ -519,7 +530,7 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
             autofocus: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
             decoration: InputDecoration(
-              suffixText: 'gramos',
+              suffixText: l10n.gramsUnit,
               filled: true,
               fillColor: AppColors.inputBg,
               border: OutlineInputBorder(
@@ -533,7 +544,7 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -547,7 +558,7 @@ class _EditGramsDialogState extends State<_EditGramsDialog> {
             final val = double.tryParse(_ctrl.text.trim());
             Navigator.pop(context, val);
           },
-          child: const Text('Aplicar'),
+          child: Text(l10n.apply),
         ),
       ],
     );

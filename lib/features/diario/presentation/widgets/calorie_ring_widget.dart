@@ -4,6 +4,7 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
@@ -33,6 +34,7 @@ class CalorieRingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final bool estaExcedido = caloriasExtras > 0;
     final bool estaCritico = ratioRojo > 0;
 
@@ -51,9 +53,9 @@ class CalorieRingWidget extends StatelessWidget {
               child: _buildSideStat(
                 icon: Icons.track_changes_outlined,
                 iconColor: AppColors.pistachio,
-                label: 'Meta Total',
+                label: l10n.calorieTargetTotal,
                 value: '$metaCalorias',
-                unit: 'kcal',
+                unit: l10n.kcalUnit,
               ),
             ),
 
@@ -81,8 +83,10 @@ class CalorieRingWidget extends StatelessWidget {
                     children: [
                       Text(
                         estaCritico
-                            ? '¡Exceso Crítico!'
-                            : (estaExcedido ? '¡Exceso!' : 'Actuales'),
+                            ? l10n.calorieCriticalExcess
+                            : (estaExcedido
+                                  ? l10n.calorieExcess
+                                  : l10n.calorieCurrent),
                         style: TextStyle(
                           color: estaCritico
                               ? AppColors.exceedRed
@@ -110,7 +114,9 @@ class CalorieRingWidget extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        estaExcedido ? '+$caloriasExtras extras' : 'kcal',
+                        estaExcedido
+                            ? '+$caloriasExtras ${l10n.calorieExtras.toLowerCase()}'
+                            : l10n.kcalUnit,
                         style: TextStyle(
                           color: estaExcedido
                               ? (estaCritico
@@ -137,9 +143,9 @@ class CalorieRingWidget extends StatelessWidget {
                       iconColor: estaCritico
                           ? AppColors.exceedRed
                           : AppColors.exceedOrange,
-                      label: 'Extras',
+                      label: l10n.calorieExtras,
                       value: '+$caloriasExtras',
-                      unit: 'kcal',
+                      unit: l10n.kcalUnit,
                       valueColor: estaCritico
                           ? AppColors.exceedRed
                           : AppColors.exceedOrange,
@@ -147,9 +153,9 @@ class CalorieRingWidget extends StatelessWidget {
                   : _buildSideStat(
                       icon: Icons.timelapse_outlined,
                       iconColor: AppColors.pistachio,
-                      label: 'Restantes',
+                      label: l10n.calorieRemaining,
                       value: '$caloriasRestantes',
-                      unit: 'kcal',
+                      unit: l10n.kcalUnit,
                     ),
             ),
           ],

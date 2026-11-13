@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/configuracion_nutricional.dart';
@@ -53,7 +54,7 @@ class MetasNutricionalesCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'METAS DIARIAS',
+                    context.l10n.dailyGoalsTitle,
                     style: AppTextStyles.title(
                       size: 13,
                       weight: FontWeight.w800,
@@ -87,7 +88,7 @@ class MetasNutricionalesCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Modificar',
+                        context.l10n.edit,
                         style: AppTextStyles.body(
                           size: 11,
                           weight: FontWeight.w800,
@@ -117,7 +118,7 @@ class MetasNutricionalesCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'kcal / día',
+                context.l10n.dailyGoalsKcalPerDay,
                 style: AppTextStyles.body(
                   size: 13,
                   weight: FontWeight.w700,
@@ -132,19 +133,19 @@ class MetasNutricionalesCard extends StatelessWidget {
           Row(
             children: [
               _buildMacroItem(
-                label: 'Proteínas',
+                label: context.l10n.macroProtein,
                 valor: '${config.metaProteinas.round()}g',
                 color: const Color(0xFFE57373),
               ),
               const SizedBox(width: 8),
               _buildMacroItem(
-                label: 'Carbos',
+                label: context.l10n.macroCarbs,
                 valor: '${config.metaCarbos.round()}g',
                 color: const Color(0xFFFFB74D),
               ),
               const SizedBox(width: 8),
               _buildMacroItem(
-                label: 'Grasas',
+                label: context.l10n.macroFat,
                 valor: '${config.metaGrasas.round()}g',
                 color: const Color(0xFF81C784),
               ),

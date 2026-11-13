@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/localization/l10n_extensions.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/categoria_alacena.dart';
@@ -80,13 +81,14 @@ class _CategoriaDialogState extends State<CategoriaDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final bool esEdicion = widget.categoriaAEditar != null;
 
     return AlertDialog(
       backgroundColor: AppColors.cardWhite,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       title: Text(
-        esEdicion ? 'Editar Categoría' : 'Nueva Categoría',
+        esEdicion ? l10n.catDialogEditTitle : l10n.catDialogNewTitle,
         style: AppTextStyles.title(size: 16.5, weight: FontWeight.w800),
       ),
       content: SizedBox(
@@ -121,7 +123,7 @@ class _CategoriaDialogState extends State<CategoriaDialog> {
                       weight: FontWeight.w700,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Ej: Suplementos, Snacks',
+                      hintText: l10n.catDialogNameHint,
                       hintStyle: TextStyle(
                         color: AppColors.textMuted.withValues(alpha: 0.7),
                         fontSize: 13,
@@ -143,7 +145,7 @@ class _CategoriaDialogState extends State<CategoriaDialog> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Elegí un ícono de comida:',
+              l10n.catDialogPickEmoji,
               style: AppTextStyles.body(
                 size: 12,
                 weight: FontWeight.w700,
@@ -201,7 +203,7 @@ class _CategoriaDialogState extends State<CategoriaDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            'Cancelar',
+            l10n.cancel,
             style: AppTextStyles.body(color: AppColors.textMuted),
           ),
         ),
@@ -221,7 +223,7 @@ class _CategoriaDialogState extends State<CategoriaDialog> {
               CategoriaAlacenaData(nombre: nombre, emoji: _emojiSeleccionado),
             );
           },
-          child: Text(esEdicion ? 'Guardar' : 'Crear'),
+          child: Text(esEdicion ? l10n.save : l10n.create),
         ),
       ],
     );

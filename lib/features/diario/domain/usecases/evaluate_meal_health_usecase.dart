@@ -15,7 +15,10 @@ class EvaluateMealHealthUseCase {
 
   const EvaluateMealHealthUseCase({required this.repository});
 
-  Future<MealHealthResult> call(MealHealthEvaluationInput input) async {
+  Future<MealHealthResult> call(
+    MealHealthEvaluationInput input, {
+    String languageCode = 'es',
+  }) async {
     if (input.ingredientes.isEmpty) {
       return const MealHealthError(ScannerEmptyIngredientsFailure());
     }
@@ -25,10 +28,11 @@ class EvaluateMealHealthUseCase {
       return const MealHealthError(ScannerInvalidResponseFailure());
     }
 
+    final isEnglish = languageCode.toLowerCase() == 'en';
     final sanitizedTitle = _sanitizeText(
       input.titulo,
       maxLength: maxTitleLength,
-      fallback: 'Comida',
+      fallback: isEnglish ? 'Meal' : 'Comida',
     );
 
     final boundedIngredients = input.ingredientes
@@ -38,7 +42,7 @@ class EvaluateMealHealthUseCase {
             nombre: _sanitizeText(
               i.nombre,
               maxLength: maxIngredientNameLength,
-              fallback: 'Alimento',
+              fallback: isEnglish ? 'Ingredient' : 'Alimento',
             ),
             gramos: _round1(i.gramos),
             calorias: i.calorias,
@@ -72,7 +76,10 @@ class EvaluateMealHealthUseCase {
       totalGrasas: recomputedFat,
     );
 
-    return repository.evaluateMealHealth(sanitizedInput);
+    return repository.evaluateMealHealth(
+      sanitizedInput,
+      languageCode: languageCode,
+    );
   }
 
   static bool _areTotalsValid(MealHealthEvaluationInput input) {
