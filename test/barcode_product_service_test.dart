@@ -827,5 +827,105 @@ void main() {
         );
       },
     );
+
+    test(
+      'proxyUrl usa proxy en analizarFotoEtiqueta y buscarPorCodigoBarras sin apiKey ni header x-goog-api-key',
+      () async {
+        final capturedRequests = <http.Request>[];
+        final mockClient = MockClient((request) async {
+          capturedRequests.add(request);
+          if (request.url.host == 'world.openfoodfacts.org') {
+            return http.Response('{"status":0}', 404);
+          }
+          if (request.url.path.contains('gemini-2.5-flash')) {
+            return http.Response('Server Error', 502);
+          }
+          return http.Response(
+            jsonEncode({
+              'candidates': [
+                {
+                  'content': {
+                    'parts': [
+                      {
+                        'text': jsonEncode({
+                          'nombre': 'Avena Instantánea',
+                          'marca': 'Quaker',
+                          'porcionGramos': 40.0,
+                          'calorias': 150,
+                          'proteinas': 5.0,
+                          'carbos': 27.0,
+                          'grasas': 2.5,
+                          'codigoBarras': '7791293022611',
+                        }),
+                      },
+                    ],
+                  },
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        });
+
+        final service = BarcodeProductServiceImpl(
+          httpClient: mockClient,
+          apiKey: 'should-not-be-sent',
+          proxyUrl: 'https://nutrilens-gemini-proxy.test.workers.dev',
+        );
+
+        final etiqueta = await service.analizarFotoEtiqueta(
+          bytes: Uint8List.fromList([1, 2, 3, 4]),
+          mimeType: 'image/jpeg',
+        );
+        expect(etiqueta, isNotNull);
+        expect(etiqueta!.nombre, equals('Avena Instantánea'));
+
+        final barcodeRes = await service.buscarPorCodigoBarras('7791293022611');
+        expect(barcodeRes, isNotNull);
+        expect(barcodeRes!.nombre, equals('Avena Instantánea'));
+
+        final geminiRequests = capturedRequests
+            .where(
+              (r) => r.url.host == 'nutrilens-gemini-proxy.test.workers.dev',
+            )
+            .toList();
+        expect(geminiRequests.length, equals(4));
+        expect(
+          geminiRequests[0].url.toString(),
+          equals(
+            'https://nutrilens-gemini-proxy.test.workers.dev/v1beta/models/gemini-2.5-flash:generateContent',
+          ),
+        );
+        expect(
+          geminiRequests[1].url.toString(),
+          equals(
+            'https://nutrilens-gemini-proxy.test.workers.dev/v1beta/models/gemini-flash-latest:generateContent',
+          ),
+        );
+        for (final req in geminiRequests) {
+          expect(req.headers.containsKey('x-goog-api-key'), isFalse);
+        }
+      },
+    );
+
+    test(
+      'proxyUrl inválido (http remoto) lanza BarcodeRespuestaInvalidaFailure',
+      () async {
+        final service = BarcodeProductServiceImpl(
+          httpClient: MockClient((_) async => http.Response('{}', 200)),
+          apiKey: '',
+          proxyUrl: 'http://insecure.example.com',
+        );
+
+        await expectLater(
+          service.analizarFotoEtiqueta(
+            bytes: Uint8List.fromList([1, 2, 3, 4]),
+            mimeType: 'image/jpeg',
+          ),
+          throwsA(isA<BarcodeRespuestaInvalidaFailure>()),
+        );
+      },
+    );
   });
 }

@@ -42,7 +42,7 @@ jobs:
         run: flutter test
 
       - name: Build Web
-        run: flutter build web --release --base-href "/nutrilens-ai-tracker/" --dart-define=GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+        run: flutter build web --release --base-href "/nutrilens-ai-tracker/" --dart-define=GEMINI_PROXY_URL="https://nutrilens-gemini-proxy.tobishakur.workers.dev"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

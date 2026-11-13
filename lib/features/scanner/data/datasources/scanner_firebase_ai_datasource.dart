@@ -31,13 +31,18 @@ class ScannerFirebaseAiDataSourceImpl implements ScannerRemoteDataSource {
   final String? endpointUrl;
   final String? healthScoreEndpointUrl;
   final String? apiKey;
+  final String? proxyUrl;
 
   ScannerFirebaseAiDataSourceImpl({
     http.Client? httpClient,
     this.endpointUrl,
     this.healthScoreEndpointUrl,
     this.apiKey,
+    this.proxyUrl,
   }) : _httpClient = httpClient ?? http.Client();
+
+  String get _effectiveProxyUrl =>
+      (proxyUrl ?? ApiConstants.geminiProxyUrl).trim();
 
   @override
   Future<PlatoDetectadoModel> analizarFotoPlato({
@@ -46,15 +51,20 @@ class ScannerFirebaseAiDataSourceImpl implements ScannerRemoteDataSource {
   }) async {
     _validateImage(imagen);
 
-    // Always prioritize authenticated backend proxy when configured.
+    // Always prioritize custom authenticated backend endpoint when configured.
     final endpoint = endpointUrl?.trim();
     if (endpoint != null && endpoint.isNotEmpty) {
       final uri = _parseHttpsEndpoint(endpoint);
       return _callBackendEndpoint(uri, imagen, nombresAlacena);
     }
 
+    final proxy = _effectiveProxyUrl;
+    if (proxy.isNotEmpty) {
+      return _callGeminiDirect(imagen, nombresAlacena, proxyBaseUrl: proxy);
+    }
+
     final key = _requireApiKey();
-    return _callGeminiDirect(imagen, nombresAlacena, key);
+    return _callGeminiDirect(imagen, nombresAlacena, key: key);
   }
 
   @override
@@ -67,8 +77,13 @@ class ScannerFirebaseAiDataSourceImpl implements ScannerRemoteDataSource {
       return _callHealthScoreEndpoint(uri, input);
     }
 
+    final proxy = _effectiveProxyUrl;
+    if (proxy.isNotEmpty) {
+      return _callGeminiHealthScoreDirect(input, proxyBaseUrl: proxy);
+    }
+
     final key = _requireApiKey();
-    return _callGeminiHealthScoreDirect(input, key);
+    return _callGeminiHealthScoreDirect(input, key: key);
   }
 
   Uri _parseHttpsEndpoint(String endpoint) {
@@ -116,9 +131,10 @@ class ScannerFirebaseAiDataSourceImpl implements ScannerRemoteDataSource {
 
   Future<PlatoDetectadoModel> _callGeminiDirect(
     ImagenPlato imagen,
-    List<String> nombresAlacena,
-    String key,
-  ) async {
+    List<String> nombresAlacena, {
+    String? key,
+    String? proxyBaseUrl,
+  }) async {
     try {
       final base64Image = base64Encode(imagen.bytes);
       final safePantry = _sanitizePantryNames(nombresAlacena);
@@ -202,6 +218,7 @@ Si un alimento detectado en el plato coincide con algún producto de la lista de
 
       final response = await _postGeminiWithFallback(
         key: key,
+        proxyBaseUrl: proxyBaseUrl,
         body: body,
         timeout: const Duration(seconds: 35),
       );
@@ -238,9 +255,10 @@ Si un alimento detectado en el plato coincide con algún producto de la lista de
   }
 
   Future<MealHealthEvaluationModel> _callGeminiHealthScoreDirect(
-    MealHealthEvaluationInput input,
-    String key,
-  ) async {
+    MealHealthEvaluationInput input, {
+    String? key,
+    String? proxyBaseUrl,
+  }) async {
     try {
       final mealPayload = _encodeMealPayload(input);
       final prompt =
@@ -279,6 +297,7 @@ $mealPayload
 
       final response = await _postGeminiWithFallback(
         key: key,
+        proxyBaseUrl: proxyBaseUrl,
         body: body,
         timeout: const Duration(seconds: 25),
       );
@@ -315,20 +334,35 @@ $mealPayload
   }
 
   Future<http.Response> _postGeminiWithFallback({
-    required String key,
+    required String? key,
+    required String? proxyBaseUrl,
     required String body,
     required Duration timeout,
   }) async {
-    final headers = {'Content-Type': 'application/json', 'x-goog-api-key': key};
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    final Uri primaryUrl;
+    final Uri fallbackUrl;
+
+    if (proxyBaseUrl != null && proxyBaseUrl.isNotEmpty) {
+      final uris = ApiConstants.resolveGeminiProxyUris(proxyBaseUrl)!;
+      primaryUrl = uris.primary;
+      fallbackUrl = uris.fallback;
+    } else {
+      primaryUrl = _geminiPrimaryUrl;
+      fallbackUrl = _geminiFallbackUrl;
+      if (key != null && key.isNotEmpty) {
+        headers['x-goog-api-key'] = key;
+      }
+    }
 
     var response = await _httpClient
-        .post(_geminiPrimaryUrl, headers: headers, body: body)
+        .post(primaryUrl, headers: headers, body: body)
         .timeout(timeout);
 
     // Retry fallback model only on 404 or 5xx server failures.
     if (response.statusCode == 404 || response.statusCode >= 500) {
       response = await _httpClient
-          .post(_geminiFallbackUrl, headers: headers, body: body)
+          .post(fallbackUrl, headers: headers, body: body)
           .timeout(timeout);
     }
     return response;

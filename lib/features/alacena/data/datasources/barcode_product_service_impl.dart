@@ -21,11 +21,19 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
 
   final http.Client _httpClient;
   final String? apiKey;
+  final String? proxyUrl;
 
-  BarcodeProductServiceImpl({http.Client? httpClient, this.apiKey})
-    : _httpClient = httpClient ?? http.Client();
+  BarcodeProductServiceImpl({
+    http.Client? httpClient,
+    this.apiKey,
+    this.proxyUrl,
+  }) : _httpClient = httpClient ?? http.Client();
 
   String get _geminiKey => (apiKey ?? ApiConstants.geminiApiKey).trim();
+  String get _geminiProxyUrl =>
+      (proxyUrl ?? ApiConstants.geminiProxyUrl).trim();
+  bool get _usaProxy => _geminiProxyUrl.isNotEmpty;
+  bool get _tieneGeminiDisponible => _usaProxy || _geminiKey.isNotEmpty;
 
   @override
   Future<BarcodeProductData?> buscarPorCodigoBarras(String codigo) async {
@@ -83,8 +91,8 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
       throw BarcodeApiNoDisponibleFailure(statusCode: response.statusCode);
     }
 
-    // 2. Fallback opcional con Gemini solo cuando OFF no tiene el producto y hay clave
-    if (_geminiKey.isNotEmpty) {
+    // 2. Fallback opcional con Gemini solo cuando OFF no tiene el producto y hay proxy o clave
+    if (_tieneGeminiDisponible) {
       return _consultarGeminiPorCodigo(sanitized);
     }
 
@@ -101,8 +109,7 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
       throw BarcodeImagenInvalidaFailure(falloImagen);
     }
 
-    final key = _geminiKey;
-    if (key.isEmpty) {
+    if (!_tieneGeminiDisponible) {
       throw const BarcodeApiKeyFaltanteFailure();
     }
 
@@ -142,7 +149,7 @@ TAREAS:
     });
 
     final response = await _postGeminiConRetrySelectivo(
-      headers: {'Content-Type': 'application/json', 'x-goog-api-key': key},
+      headers: _buildGeminiHeaders(),
       body: body,
       timeout: const Duration(seconds: 18),
     );
@@ -240,8 +247,7 @@ TAREAS:
   }
 
   Future<BarcodeProductData?> _consultarGeminiPorCodigo(String codigo) async {
-    final key = _geminiKey;
-    if (key.isEmpty) return null;
+    if (!_tieneGeminiDisponible) return null;
 
     final prompt =
         '''
@@ -265,7 +271,7 @@ Si no lo conocés con absoluta certeza, respondé con null o un objeto vacío.
     });
 
     final response = await _postGeminiConRetrySelectivo(
-      headers: {'Content-Type': 'application/json', 'x-goog-api-key': key},
+      headers: _buildGeminiHeaders(),
       body: body,
       timeout: const Duration(seconds: 10),
     );
@@ -287,16 +293,35 @@ Si no lo conocés con absoluta certeza, respondé con null o un objeto vacío.
     );
   }
 
+  Map<String, String> _buildGeminiHeaders() {
+    if (_usaProxy) {
+      return const {'Content-Type': 'application/json'};
+    }
+    return {'Content-Type': 'application/json', 'x-goog-api-key': _geminiKey};
+  }
+
+  ({Uri primary, Uri fallback}) _resolveGeminiUris() {
+    if (_usaProxy) {
+      try {
+        return ApiConstants.resolveGeminiProxyUris(_geminiProxyUrl)!;
+      } on FormatException {
+        throw const BarcodeRespuestaInvalidaFailure();
+      }
+    }
+    return (primary: _geminiPrimaryUrl, fallback: _geminiFallbackUrl);
+  }
+
   Future<http.Response> _postGeminiConRetrySelectivo({
     required Map<String, String> headers,
     required String body,
     required Duration timeout,
   }) async {
+    final uris = _resolveGeminiUris();
     var debeReintentar = false;
 
     try {
       final response = await _httpClient
-          .post(_geminiPrimaryUrl, headers: headers, body: body)
+          .post(uris.primary, headers: headers, body: body)
           .timeout(timeout);
 
       if (response.statusCode == 200) return response;
@@ -324,7 +349,7 @@ Si no lo conocés con absoluta certeza, respondé con null o un objeto vacío.
 
     try {
       final fallbackResponse = await _httpClient
-          .post(_geminiFallbackUrl, headers: headers, body: body)
+          .post(uris.fallback, headers: headers, body: body)
           .timeout(timeout);
 
       if (fallbackResponse.statusCode == 200) return fallbackResponse;

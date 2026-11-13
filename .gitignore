@@ -56,5 +56,13 @@ firestore-debug.log*
 .env.*
 !.env.example
 
+# Cloudflare Worker
+worker/.dev.vars
+worker/.dev.vars.*
+!worker/.dev.vars.example
+worker/node_modules/
+worker/.wrangler/
+worker/dist/
+
 # Local properties
 local.properties

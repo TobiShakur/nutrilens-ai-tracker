@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:nutrilens_provider/core/constants/api_constants.dart';
 import 'package:nutrilens_provider/features/diario/data/models/meal_health_evaluation_model.dart';
 import 'package:nutrilens_provider/features/diario/domain/entities/meal_health_evaluation.dart';
 import 'package:nutrilens_provider/features/scanner/data/datasources/scanner_firebase_ai_datasource.dart';
@@ -490,6 +491,109 @@ void main() {
         expect(under.healthScore, 0);
         expect(under.razonHealthScore.contains('\n'), isFalse);
         expect(under.razonHealthScore.contains('\x00'), isFalse);
+      },
+    );
+
+    test(
+      'proxyUrl routes analizarFotoPlato and evaluarHealthScore via proxy without apiKey or x-goog-api-key header',
+      () async {
+        final capturedRequests = <http.Request>[];
+        var callCount = 0;
+
+        final ds = ScannerFirebaseAiDataSourceImpl(
+          httpClient: MockClient((request) async {
+            capturedRequests.add(request);
+            callCount++;
+            if (callCount == 1) {
+              // Trigger fallback to gemini-flash-latest on 503.
+              return http.Response('unavailable', 503);
+            }
+            if (callCount == 2) {
+              return http.Response(
+                geminiPayload({
+                  'nombrePlato': 'Ensalada',
+                  'healthScore': 95,
+                  'explicacionHealthScore': 'Muy nutritivo.',
+                  'ingredientes': [
+                    {
+                      'nombre': 'Lechuga',
+                      'gramos': 100,
+                      'calorias': 15,
+                      'proteinas': 1.4,
+                      'carbos': 2.9,
+                      'grasas': 0.2,
+                      'emoji': '🥬',
+                    },
+                  ],
+                }),
+                200,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }
+            return http.Response(
+              geminiPayload({
+                'healthScore': 91,
+                'razonHealthScore': 'Balance excelente.',
+              }),
+              200,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }),
+          apiKey: '',
+          proxyUrl: 'https://nutrilens-gemini-proxy.test.workers.dev/',
+        );
+
+        final dish = await ds.analizarFotoPlato(
+          imagen: sampleImage,
+          nombresAlacena: const [],
+        );
+        expect(dish.nombrePlato, 'Ensalada');
+
+        final health = await ds.evaluarHealthScore(input: sampleInput);
+        expect(health.healthScore, 91);
+
+        expect(capturedRequests.length, 3);
+        expect(
+          capturedRequests[0].url.toString(),
+          'https://nutrilens-gemini-proxy.test.workers.dev/v1beta/models/gemini-2.5-flash:generateContent',
+        );
+        expect(
+          capturedRequests[1].url.toString(),
+          'https://nutrilens-gemini-proxy.test.workers.dev/v1beta/models/gemini-flash-latest:generateContent',
+        );
+        expect(
+          capturedRequests[2].url.toString(),
+          'https://nutrilens-gemini-proxy.test.workers.dev/v1beta/models/gemini-2.5-flash:generateContent',
+        );
+        for (final req in capturedRequests) {
+          expect(req.headers.containsKey('x-goog-api-key'), isFalse);
+        }
+      },
+    );
+
+    test(
+      'rejects non-HTTPS remote proxyUrl and allows localhost http',
+      () async {
+        final insecureDs = ScannerFirebaseAiDataSourceImpl(
+          httpClient: MockClient((_) async => http.Response('', 200)),
+          apiKey: '',
+          proxyUrl: 'http://insecure.example.com',
+        );
+        await expectLater(
+          insecureDs.analizarFotoPlato(
+            imagen: sampleImage,
+            nombresAlacena: const [],
+          ),
+          throwsA(isA<ScannerInvalidResponseFailure>()),
+        );
+
+        final localUris = ApiConstants.resolveGeminiProxyUris(
+          'http://127.0.0.1:8787/',
+        );
+        expect(
+          localUris?.primary.toString(),
+          'http://127.0.0.1:8787/v1beta/models/gemini-2.5-flash:generateContent',
+        );
       },
     );
   });
