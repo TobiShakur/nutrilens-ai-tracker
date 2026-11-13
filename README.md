@@ -5,11 +5,11 @@
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20MVVM%20(Provider)-2ECC71)](https://flutter.dev)
 [![Tests](https://img.shields.io/badge/Tests-45%20Passing-brightgreen?logo=checkmarx)](https://github.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/Demo-Firebase%20Hosting-FFA000?logo=firebase)](https://fitiafake-da85e.web.app)
+[![Live Demo](https://img.shields.io/badge/Demo-GitHub%20Pages-222222?logo=githubpages)](https://tobishakur.github.io/nutrilens-ai-tracker/)
 
 > **NutriLens** is a production-grade, offline-first mobile and web application engineered with **Clean Architecture + MVVM (Provider)**. It integrates **Google Gemini Multimodal Vision AI** to recognize food dishes from photos, automatically match detected ingredients against the user's pantry inventory (*Mi Alacena*), and render an interactive multi-layer caloric gauge with real-time macro tracking.
 
-🔗 **Live Production Demo:** [https://fitiafake-da85e.web.app](https://fitiafake-da85e.web.app)
+🔗 **Live Production Demo:** [https://tobishakur.github.io/nutrilens-ai-tracker/](https://tobishakur.github.io/nutrilens-ai-tracker/)
 
 ---
 

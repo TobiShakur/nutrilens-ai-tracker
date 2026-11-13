@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../domain/entities/categoria_alacena.dart';
 import '../../domain/entities/ingrediente_alacena.dart';
 import '../viewmodels/alacena_viewmodel.dart';
 import 'agregar_ingrediente_sheet.dart';
@@ -26,6 +27,8 @@ class SelectorAlacenaModal extends StatefulWidget {
 
 class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
   final _searchCtrl = TextEditingController();
+  String _query = '';
+  CategoriaAlacena _selectedCategory = CategoriaAlacena.todos;
 
   @override
   void dispose() {
@@ -33,10 +36,36 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
     super.dispose();
   }
 
+  List<IngredienteAlacena> _filterIngredients(
+    List<IngredienteAlacena> all,
+    CategoriaAlacena activeCategory,
+  ) {
+    final normalizedQuery = _query.trim().toLowerCase();
+    return all.where((item) {
+      final matchesCategory =
+          activeCategory == CategoriaAlacena.todos ||
+          item.categoria == activeCategory;
+      final matchesQuery =
+          normalizedQuery.isEmpty ||
+          item.nombre.toLowerCase().contains(normalizedQuery) ||
+          (item.marca?.toLowerCase().contains(normalizedQuery) ?? false);
+      return matchesCategory && matchesQuery;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<AlacenaViewModel>();
-    final items = vm.ingredientesFiltrados;
+    final allIngredients = context
+        .select<AlacenaViewModel, List<IngredienteAlacena>>(
+          (vm) => vm.todosLosIngredientes,
+        );
+    final categories = context.select<AlacenaViewModel, List<CategoriaAlacena>>(
+      (vm) => vm.categorias,
+    );
+    final activeCategory = categories.contains(_selectedCategory)
+        ? _selectedCategory
+        : CategoriaAlacena.todos;
+    final items = _filterIngredients(allIngredients, activeCategory);
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
@@ -87,9 +116,7 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: _searchCtrl,
-                  onChanged: context
-                      .read<AlacenaViewModel>()
-                      .actualizarBusqueda,
+                  onChanged: (val) => setState(() => _query = val),
                   style: AppTextStyles.body(
                     size: 13.5,
                     weight: FontWeight.w600,
@@ -105,14 +132,12 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
                       color: AppColors.forestDark,
                       size: 20,
                     ),
-                    suffixIcon: _searchCtrl.text.isNotEmpty
+                    suffixIcon: _query.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear_rounded, size: 18),
                             onPressed: () {
                               _searchCtrl.clear();
-                              context
-                                  .read<AlacenaViewModel>()
-                                  .actualizarBusqueda('');
+                              setState(() => _query = '');
                             },
                           )
                         : null,
@@ -133,9 +158,9 @@ class _SelectorAlacenaModalState extends State<SelectorAlacenaModal> {
           ),
           const SizedBox(height: 10),
           CategoriaChipFilter(
-            categorias: vm.categorias,
-            seleccionada: vm.categoriaSeleccionada,
-            onSelected: context.read<AlacenaViewModel>().seleccionarCategoria,
+            categorias: categories,
+            seleccionada: activeCategory,
+            onSelected: (cat) => setState(() => _selectedCategory = cat),
           ),
           const SizedBox(height: 10),
           Expanded(

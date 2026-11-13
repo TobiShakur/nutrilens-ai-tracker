@@ -1,10 +1,16 @@
+import '../../../diario/data/models/meal_health_evaluation_model.dart';
+import '../../../diario/domain/entities/meal_health_evaluation.dart';
 import '../../domain/entities/imagen_plato.dart';
 import '../models/plato_detectado_model.dart';
 
-/// Contrato para el DataSource remoto de IA (Gemini Vision / Firebase AI Logic).
+/// Contract for remote AI operations (Gemini Vision & text Health Score).
 abstract class ScannerRemoteDataSource {
   Future<PlatoDetectadoModel> analizarFotoPlato({
     required ImagenPlato imagen,
     required List<String> nombresAlacena,
+  });
+
+  Future<MealHealthEvaluationModel> evaluarHealthScore({
+    required MealHealthEvaluationInput input,
   });
 }

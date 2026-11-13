@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../alacena/presentation/views/alacena_screen.dart';
 import '../../../diario/presentation/views/dashboard_screen.dart';
-import '../../../diario/presentation/widgets/app_nav_bar.dart';
 import '../../../perfil/presentation/views/perfil_screen.dart';
 import '../../../scanner/presentation/views/scanner_screen.dart';
+import '../widgets/app_nav_bar.dart';
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});

@@ -90,15 +90,18 @@ class DiarioDia {
     return comidas.fold(0.0, (total, c) => total + c.carbohidratos);
   }
 
+  bool get tieneComidasConScore => comidas.any((c) => c.healthScore != null);
+
   int get promedioHealthScore {
-    if (comidas.isEmpty) return 0;
-    final suma = comidas.fold(0, (total, c) => total + c.healthScore);
-    return (suma / comidas.length).round();
+    final scored = comidas.where((c) => c.healthScore != null).toList();
+    if (scored.isEmpty) return 0;
+    final suma = scored.fold<int>(0, (total, c) => total + c.healthScore!);
+    return (suma / scored.length).round();
   }
 
   NivelScore get nivelScore => NivelScore.desdeScore(
     score: promedioHealthScore,
-    hayComidas: comidas.isNotEmpty,
+    hayComidas: tieneComidasConScore,
   );
 
   int get cantidadComidas => comidas.length;

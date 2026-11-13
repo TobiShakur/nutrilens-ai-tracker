@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../alacena/domain/entities/barcode_validator.dart';
 
 /// Value Object inmutable que representa una imagen capturada para análisis.
 @immutable
@@ -13,7 +14,7 @@ class ImagenPlato {
     this.nombreArchivo,
   });
 
-  /// Factory con validaciones defensivas de dominio
+  /// Factory con validaciones defensivas de dominio.
   factory ImagenPlato.crear({
     required Uint8List bytes,
     String mimeType = 'image/jpeg',
@@ -31,9 +32,15 @@ class ImagenPlato {
         'La imagen supera el límite máximo permitido de 15 MB.',
       );
     }
+
+    final mimeNormalizado = BarcodeValidator.normalizarMime(mimeType);
+    if (!BarcodeValidator.allowedMimeTypes.contains(mimeNormalizado)) {
+      throw ArgumentError('Formato de imagen no soportado ($mimeNormalizado).');
+    }
+
     return ImagenPlato._(
       bytes: bytes,
-      mimeType: mimeType,
+      mimeType: mimeNormalizado,
       nombreArchivo: nombreArchivo,
     );
   }

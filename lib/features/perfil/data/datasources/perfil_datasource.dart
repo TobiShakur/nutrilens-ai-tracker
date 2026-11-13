@@ -126,11 +126,14 @@ class PerfilDataSourceImpl implements PerfilDataSource {
       config: config,
     );
 
-    // 5. Health Score promedio
+    // 5. Health Score promedio (only scored meals)
     final todasLasComidas = diasDeLaSemana.expand((d) => d.comidas).toList();
-    final healthScorePromedio = todasLasComidas.isNotEmpty
-        ? (todasLasComidas.fold(0, (sum, c) => sum + c.healthScore) /
-                  todasLasComidas.length)
+    final comidasConScore = todasLasComidas
+        .where((c) => c.healthScore != null)
+        .toList();
+    final healthScorePromedio = comidasConScore.isNotEmpty
+        ? (comidasConScore.fold<int>(0, (sum, c) => sum + c.healthScore!) /
+                  comidasConScore.length)
               .round()
         : 0;
 

@@ -14,4 +14,19 @@ class AlimentoConflictoMarca {
     required this.gramosDetectados,
     required this.opcionesAlacena,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AlimentoConflictoMarca &&
+          nombreGenerico == other.nombreGenerico &&
+          gramosDetectados == other.gramosDetectados &&
+          listEquals(opcionesAlacena, other.opcionesAlacena);
+
+  @override
+  int get hashCode => Object.hash(
+    nombreGenerico,
+    gramosDetectados,
+    Object.hashAll(opcionesAlacena),
+  );
 }

@@ -5,9 +5,11 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
 import '../../../alacena/presentation/widgets/selector_alacena_modal.dart';
 import '../../../diario/domain/entities/comida_ingrediente.dart';
-import '../../../diario/domain/entities/comida_item.dart';
 import '../../../diario/presentation/viewmodels/diario_viewmodel.dart';
-import '../../domain/entities/plato_detectado.dart';
+import '../../../diario/presentation/viewmodels/health_score_eval_state.dart';
+import '../../../diario/presentation/widgets/health_score_badge.dart';
+import '../../../diario/presentation/widgets/health_score_detail_sheet.dart';
+import '../viewmodels/scanner_state.dart';
 import '../viewmodels/scanner_viewmodel.dart';
 
 class ReviewComidaSheet extends StatefulWidget {
@@ -51,120 +53,22 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
   }
 
   Future<void> _editarTitulo() async {
-    final ctrl = TextEditingController(text: _titulo);
-    final nuevo = await showDialog<String>(
+    final updated = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardWhite,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Nombre de la comida',
-          style: AppTextStyles.title(size: 16.5, weight: FontWeight.w800),
-        ),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          style: AppTextStyles.body(size: 14, weight: FontWeight.w700),
-          decoration: InputDecoration(
-            hintText: 'Ej: Almuerzo liviano, Bowl post entreno',
-            filled: true,
-            fillColor: AppColors.inputBg,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancelar',
-              style: AppTextStyles.body(color: AppColors.textMuted),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.forestDark,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+      builder: (_) => _EditMealTitleDialog(initialTitle: _titulo),
     );
 
-    if (nuevo != null && nuevo.isNotEmpty && mounted) {
-      setState(() => _titulo = nuevo);
+    if (updated != null && updated.isNotEmpty && mounted) {
+      setState(() => _titulo = updated);
     }
   }
 
   Future<void> _editarGramosManual(ComidaIngrediente item) async {
-    final ctrl = TextEditingController(text: item.gramos.round().toString());
     final res = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardWhite,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Cantidad en gramos',
-          style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              item.nombreConMarca,
-              style: AppTextStyles.body(
-                size: 13,
-                weight: FontWeight.w600,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: false,
-              ),
-              decoration: InputDecoration(
-                suffixText: 'gramos',
-                filled: true,
-                fillColor: AppColors.inputBg,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.forestDark,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              final val = double.tryParse(ctrl.text.trim());
-              Navigator.pop(ctx, val);
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
+      builder: (_) => _EditGramsDialog(
+        ingredientName: item.nombreConMarca,
+        initialGrams: item.gramos,
       ),
     );
 
@@ -185,27 +89,17 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
 
   void _confirmarAgregarComida() {
     final scanVM = context.read<ScannerViewModel>();
-    final plato = scanVM.platoDetectado;
-    if (plato == null || plato.ingredientes.isEmpty) return;
-
-    final comida = ComidaItem(
-      id: 'comida_${DateTime.now().microsecondsSinceEpoch}',
+    final comida = scanVM.construirComidaParaDiario(
       titulo: _titulo,
-      tipoComida: _tipoSeleccionado.toUpperCase(),
-      descripcion: plato.nombreSugerido,
-      healthScore: plato.healthScore,
-      explicacionHealthScore: plato.explicacionHealthScore,
-      hora:
-          '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-      icono: Icons.restaurant_outlined,
-      ingredientes: plato.ingredientes,
+      tipoComida: _tipoSeleccionado,
     );
+    if (comida == null) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     context.read<DiarioViewModel>().registrarComida(comida);
-    scanVM.reiniciar();
-    Navigator.pop(context, true); // Devuelve true a la pantalla anterior
+    Navigator.pop(context, true);
 
-    ScaffoldMessenger.of(context)
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
@@ -226,130 +120,48 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
       );
   }
 
-  void _mostrarExplicacionScore(BuildContext context, PlatoDetectado plato) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
-        decoration: const BoxDecoration(
-          color: AppColors.cardWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF27AE60).withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_rounded,
-                    color: Color(0xFF27AE60),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Health Score · ${plato.healthScore}/100',
-                        style: AppTextStyles.title(
-                          size: 16,
-                          weight: FontWeight.w900,
-                          color: AppColors.forestDark,
-                        ),
-                      ),
-                      Text(
-                        'Evaluación nutricional de Gemini IA',
-                        style: AppTextStyles.body(
-                          size: 11.5,
-                          weight: FontWeight.w600,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.scaffoldBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.borderLight),
-              ),
-              child: Text(
-                plato.explicacionHealthScore.trim().isNotEmpty
-                    ? plato.explicacionHealthScore.trim()
-                    : 'Aporte balanceado de nutrientes, con predominancia de alimentos reales y bajo nivel de ultraprocesados.',
-                style: AppTextStyles.body(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: AppColors.forestDark,
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.forestDark,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  'Entendido',
-                  style: AppTextStyles.body(
-                    size: 13.5,
-                    weight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  void _openHealthScoreDetail(BuildContext context) {
+    final scanVM = context.read<ScannerViewModel>();
+    HealthScoreDetailSheet.show(
+      context,
+      listenable: scanVM,
+      readSnapshot: () {
+        final s = scanVM.state;
+        if (s is! ScannerSuccess) {
+          return const HealthScoreSheetSnapshot(
+            healthScore: null,
+            razonHealthScore: null,
+            isStale: false,
+            hasIngredients: false,
+            evalState: HealthScoreEvalIdle(),
+          );
+        }
+        return HealthScoreSheetSnapshot(
+          healthScore: s.plato.healthScore,
+          razonHealthScore: s.plato.explicacionHealthScore,
+          isStale: s.healthScoreDesactualizado,
+          hasIngredients: s.plato.ingredientes.isNotEmpty,
+          evalState: s.healthScoreEvalState,
+        );
+      },
+      onEvaluate: () => scanVM.evaluarHealthScore(titulo: _titulo),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final scanVM = context.watch<ScannerViewModel>();
-    final plato = scanVM.platoDetectado;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    if (plato == null) {
+    final state = context.select<ScannerViewModel, ScannerState>(
+      (vm) => vm.state,
+    );
+    if (state is! ScannerSuccess) {
       return const SizedBox.shrink();
     }
+
+    final plato = state.plato;
+    final esManual = state.esManual;
+    final hasIngredients = plato.ingredientes.isNotEmpty;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
       constraints: BoxConstraints(maxHeight: screenHeight * 0.90),
@@ -372,86 +184,72 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          // Título de la comida con lápiz a la derecha de todo
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        _titulo,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.title(
-                          size: 18,
-                          weight: FontWeight.w900,
-                          color: AppColors.forestDark,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _mostrarExplicacionScore(context, plato),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.forestDark.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.pistachio.withValues(alpha: 0.5),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _titulo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.title(
+                              size: 18,
+                              weight: FontWeight.w900,
+                              color: AppColors.forestDark,
+                            ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.favorite_rounded,
-                              size: 12,
-                              color: Color(0xFF27AE60),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Score ${plato.healthScore}/100',
-                              style: AppTextStyles.body(
-                                size: 11,
-                                weight: FontWeight.w800,
-                                color: AppColors.forestDark,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.help_outline_rounded,
-                              size: 12.5,
-                              color: AppColors.forestDark.withValues(
-                                alpha: 0.65,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 8),
+                        HealthScoreBadge(
+                          healthScore: plato.healthScore,
+                          isStale: state.healthScoreDesactualizado,
+                          isLoading:
+                              state.healthScoreEvalState
+                                  is HealthScoreEvaluating,
+                          hasError:
+                              state.healthScoreEvalState
+                                  is HealthScoreEvalError,
+                          onTap: () => _openHealthScoreDetail(context),
+                        ),
+                      ],
+                    ),
+                    if (esManual) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Armado manual',
+                        style: AppTextStyles.body(
+                          size: 11.5,
+                          weight: FontWeight.w600,
+                          color: AppColors.textMutedAccessible,
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
-              IconButton(
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  size: 20,
-                  color: AppColors.forestDark,
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: AppColors.forestDark,
+                  ),
+                  tooltip: 'Cambiar nombre',
+                  onPressed: _editarTitulo,
                 ),
-                tooltip: 'Cambiar nombre',
-                onPressed: _editarTitulo,
               ),
             ],
           ),
           const SizedBox(height: 8),
-          // Selector horizontal de Tipo de Comida
           SizedBox(
             height: 34,
             child: ListView.separated(
@@ -485,7 +283,6 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          // Resumen de Energía y Macros
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -499,7 +296,7 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'TOTAL DETECTADO',
+                      esManual ? 'TOTAL DE LA COMIDA' : 'TOTAL DETECTADO',
                       style: AppTextStyles.body(
                         size: 10.5,
                         weight: FontWeight.w700,
@@ -528,183 +325,194 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          // Encabezado de la lista
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Ingredientes detectados (${plato.ingredientes.length})',
+                esManual
+                    ? 'Ingredientes (${plato.ingredientes.length})'
+                    : 'Ingredientes detectados (${plato.ingredientes.length})',
                 style: AppTextStyles.title(size: 14, weight: FontWeight.w800),
               ),
-              Text(
-                'Deslizá para quitar',
-                style: AppTextStyles.body(size: 11, color: AppColors.textMuted),
-              ),
+              if (hasIngredients)
+                Text(
+                  'Deslizá para quitar',
+                  style: AppTextStyles.body(
+                    size: 11,
+                    color: AppColors.textMuted,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 8),
-          // Lista vertical simple de ingredientes con swipe-to-delete
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              itemCount: plato.ingredientes.length,
-              separatorBuilder: (_, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final item = plato.ingredientes[index];
-                final vieneDeAlacena = item.ingredienteAlacenaId != null;
+            child: hasIngredients
+                ? ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: plato.ingredientes.length,
+                    separatorBuilder: (_, index) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final item = plato.ingredientes[index];
+                      final vieneDeAlacena = item.ingredienteAlacenaId != null;
 
-                return Dismissible(
-                  key: ValueKey('review_ing_${item.id}'),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 18),
-                    decoration: BoxDecoration(
-                      color: AppColors.alertRed,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.delete_outline_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Quitar',
-                          style: AppTextStyles.body(
-                            size: 12,
-                            weight: FontWeight.w800,
-                            color: Colors.white,
+                      return Dismissible(
+                        key: ValueKey('review_ing_${item.id}'),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 18),
+                          decoration: BoxDecoration(
+                            color: AppColors.alertRed,
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  confirmDismiss: (_) async {
-                    return await ConfirmDeleteDialog.show(
-                      context,
-                      titulo: '¿Quitar ingrediente?',
-                      mensaje:
-                          'Se quitará "${item.nombreConMarca}" de esta comida.',
-                      textoConfirmar: 'Quitar',
-                    );
-                  },
-                  onDismissed: (_) {
-                    scanVM.eliminarIngrediente(item.id);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.scaffoldBg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(item.emoji, style: const TextStyle(fontSize: 20)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      item.nombreConMarca,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTextStyles.body(
-                                        size: 13,
-                                        weight: FontWeight.w800,
-                                        color: AppColors.forestDark,
-                                      ),
-                                    ),
-                                  ),
-                                  if (vieneDeAlacena) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 1.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.pistachio.withValues(
-                                          alpha: 0.35,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'Alacena',
-                                        style: AppTextStyles.body(
-                                          size: 9.5,
-                                          weight: FontWeight.w800,
-                                          color: AppColors.forestDark,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                              const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.white,
+                                size: 20,
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(width: 4),
                               Text(
-                                '${item.calorias} kcal · P ${item.proteinas}g · C ${item.carbohidratos}g · G ${item.grasas}g',
+                                'Quitar',
                                 style: AppTextStyles.body(
-                                  size: 11,
-                                  weight: FontWeight.w600,
-                                  color: AppColors.textMuted,
+                                  size: 12,
+                                  weight: FontWeight.w800,
+                                  color: Colors.white,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        // Controles de porción: (-) 100g (+)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _SmallStepBtn(
-                              icon: Icons.remove,
-                              onTap: () =>
-                                  scanVM.ajustarGramosIngrediente(item.id, -10),
-                            ),
-                            InkWell(
-                              borderRadius: BorderRadius.circular(6),
-                              onTap: () => _editarGramosManual(item),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 4,
-                                ),
-                                child: Text(
-                                  item.porcionLabel,
-                                  style: AppTextStyles.number(
-                                    size: 12.5,
-                                    weight: FontWeight.w800,
-                                    color: AppColors.forestDark,
-                                  ),
+                        confirmDismiss: (_) async {
+                          return await ConfirmDeleteDialog.show(
+                            context,
+                            titulo: '¿Quitar ingrediente?',
+                            mensaje:
+                                'Se quitará "${item.nombreConMarca}" de esta comida.',
+                            textoConfirmar: 'Quitar',
+                          );
+                        },
+                        onDismissed: (_) {
+                          context.read<ScannerViewModel>().eliminarIngrediente(
+                            item.id,
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.scaffoldBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.borderLight),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                item.emoji,
+                                style: const TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            item.nombreConMarca,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTextStyles.body(
+                                              size: 13,
+                                              weight: FontWeight.w800,
+                                              color: AppColors.forestDark,
+                                            ),
+                                          ),
+                                        ),
+                                        if (vieneDeAlacena) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 5,
+                                              vertical: 1.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.pistachio
+                                                  .withValues(alpha: 0.35),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              'Alacena',
+                                              style: AppTextStyles.body(
+                                                size: 9.5,
+                                                weight: FontWeight.w800,
+                                                color: AppColors.forestDark,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${item.calorias} kcal · P ${item.proteinas}g · C ${item.carbohidratos}g · G ${item.grasas}g',
+                                      style: AppTextStyles.body(
+                                        size: 11,
+                                        weight: FontWeight.w600,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            _SmallStepBtn(
-                              icon: Icons.add,
-                              onTap: () =>
-                                  scanVM.ajustarGramosIngrediente(item.id, 10),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _SmallStepBtn(
+                                    icon: Icons.remove,
+                                    onTap: () => context
+                                        .read<ScannerViewModel>()
+                                        .ajustarGramosIngrediente(item.id, -10),
+                                  ),
+                                  InkWell(
+                                    borderRadius: BorderRadius.circular(6),
+                                    onTap: () => _editarGramosManual(item),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 4,
+                                      ),
+                                      child: Text(
+                                        item.porcionLabel,
+                                        style: AppTextStyles.number(
+                                          size: 12.5,
+                                          weight: FontWeight.w800,
+                                          color: AppColors.forestDark,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  _SmallStepBtn(
+                                    icon: Icons.add,
+                                    onTap: () => context
+                                        .read<ScannerViewModel>()
+                                        .ajustarGramosIngrediente(item.id, 10),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                      );
+                    },
+                  )
+                : const _EmptyIngredientsPlaceholder(),
           ),
           const SizedBox(height: 8),
-          // Botón para agregar ingredientes desde la Alacena
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.forestDark,
@@ -726,31 +534,245 @@ class _ReviewComidaSheetState extends State<ReviewComidaSheet> {
             onPressed: _agregarDesdeAlacena,
           ),
           const SizedBox(height: 12),
-          // Botón flotante inferior para confirmar y agregar comida
           SizedBox(
             height: 48,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.pistachio,
                 foregroundColor: AppColors.forestDark,
+                disabledBackgroundColor: AppColors.borderLight,
+                disabledForegroundColor: AppColors.textMutedAccessible,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              onPressed: _confirmarAgregarComida,
+              onPressed: hasIngredients ? _confirmarAgregarComida : null,
               child: Text(
                 'Agregar comida',
                 style: AppTextStyles.body(
                   size: 15,
                   weight: FontWeight.w900,
-                  color: AppColors.forestDark,
+                  color: hasIngredients
+                      ? AppColors.forestDark
+                      : AppColors.textMutedAccessible,
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EmptyIngredientsPlaceholder extends StatelessWidget {
+  const _EmptyIngredientsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.restaurant_menu_rounded,
+                size: 30,
+                color: AppColors.textMuted,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Todavía no agregaste ingredientes',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.title(
+                  size: 14,
+                  weight: FontWeight.w800,
+                  color: AppColors.forestDark,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tocá "Agregar ingrediente desde Mi Alacena" para armar tu comida.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(
+                  size: 12,
+                  color: AppColors.textMutedAccessible,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditMealTitleDialog extends StatefulWidget {
+  final String initialTitle;
+
+  const _EditMealTitleDialog({required this.initialTitle});
+
+  @override
+  State<_EditMealTitleDialog> createState() => _EditMealTitleDialogState();
+}
+
+class _EditMealTitleDialogState extends State<_EditMealTitleDialog> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.cardWhite,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        'Nombre de la comida',
+        style: AppTextStyles.title(size: 16.5, weight: FontWeight.w800),
+      ),
+      content: TextField(
+        controller: _ctrl,
+        autofocus: true,
+        style: AppTextStyles.body(size: 14, weight: FontWeight.w700),
+        decoration: InputDecoration(
+          hintText: 'Ej: Almuerzo liviano, Bowl post entreno',
+          filled: true,
+          fillColor: AppColors.inputBg,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'Cancelar',
+            style: AppTextStyles.body(color: AppColors.textMuted),
+          ),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.forestDark,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: () => Navigator.pop(context, _ctrl.text.trim()),
+          child: const Text('Guardar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditGramsDialog extends StatefulWidget {
+  final String ingredientName;
+  final double initialGrams;
+
+  const _EditGramsDialog({
+    required this.ingredientName,
+    required this.initialGrams,
+  });
+
+  @override
+  State<_EditGramsDialog> createState() => _EditGramsDialogState();
+}
+
+class _EditGramsDialogState extends State<_EditGramsDialog> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialGrams.round().toString());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.cardWhite,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        'Cantidad en gramos',
+        style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.ingredientName,
+            style: AppTextStyles.body(
+              size: 13,
+              weight: FontWeight.w600,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: false),
+            decoration: InputDecoration(
+              suffixText: 'gramos',
+              filled: true,
+              fillColor: AppColors.inputBg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.forestDark,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: () {
+            final val = double.tryParse(_ctrl.text.trim());
+            Navigator.pop(context, val);
+          },
+          child: const Text('Aplicar'),
+        ),
+      ],
     );
   }
 }

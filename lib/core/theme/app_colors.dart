@@ -29,16 +29,23 @@ class AppColors {
   // Tipografía
   static const Color textDark = Color(0xFF0D291E);
   static const Color textMuted = Color(0xFF6B8075);
+  static const Color textMutedAccessible = Color(0xFF51665E);
   static const Color textLight = Color(0xFFFFFFFF);
   static const Color textMutedLight = Color(
     0xFFA5C4B4,
   ); // Más claro para mejor contraste
+
+  // Superficies oscuras del escáner y banners de error
+  static const Color scannerSurfaceDark = Color(0xFF0F1B16);
+  static const Color scannerControlDark = Color(0xFF111D18);
+  static const Color errorSurfaceDark = Color(0xFF2A1215);
 
   // Bordes y Divisores
   static const Color borderLight = Color(0xFFE2EBE5);
 
   // Estados
   static const Color alertRed = Color(0xFFEF4444);
+  static const Color errorTintLight = Color(0xFFFEF2F2);
   static const Color successGreen = Color(0xFF10B981);
 
   // Anillo de calorías: primer exceso (naranja) y segundo exceso (rojo)
@@ -52,5 +59,6 @@ class AppColors {
   // Health score: niveles
   static const Color scoreGood = Color(0xFF6E9A1F);
   static const Color scoreMid = Color(0xFFD98E04);
+  static const Color scoreMidText = Color(0xFF8A5600);
   static const Color scoreLow = Color(0xFFD9534F);
 }

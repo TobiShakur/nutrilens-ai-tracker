@@ -1,9 +1,58 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nutrilens_provider/core/failures/scanner_failure.dart';
 import 'package:nutrilens_provider/features/diario/data/repositories/diario_repository_impl.dart';
 import 'package:nutrilens_provider/features/diario/domain/entities/comida_ingrediente.dart';
 import 'package:nutrilens_provider/features/diario/domain/entities/comida_item.dart';
+import 'package:nutrilens_provider/features/diario/domain/entities/diario_dia.dart';
+import 'package:nutrilens_provider/features/diario/domain/entities/meal_health_evaluation.dart';
 import 'package:nutrilens_provider/features/diario/domain/entities/nivel_score.dart';
+import 'package:nutrilens_provider/features/diario/domain/repositories/diario_repository.dart';
+import 'package:nutrilens_provider/features/diario/domain/repositories/meal_health_repository.dart';
+import 'package:nutrilens_provider/features/diario/domain/usecases/evaluate_meal_health_usecase.dart';
 import 'package:nutrilens_provider/features/diario/presentation/viewmodels/diario_viewmodel.dart';
+import 'package:nutrilens_provider/features/diario/presentation/viewmodels/health_score_eval_state.dart';
+
+class _SpyDiarioRepository implements DiarioRepository {
+  final DiarioRepository _inner = DiarioRepositoryImpl();
+  int saveCalls = 0;
+  Map<int, DiarioDia>? lastSavedDias;
+
+  @override
+  Map<int, DiarioDia> getDiasIniciales() => _inner.getDiasIniciales();
+
+  @override
+  Future<void> guardarDias(Map<int, DiarioDia> dias) async {
+    saveCalls++;
+    lastSavedDias = dias;
+  }
+
+  @override
+  ComidaItem generarComidaAleatoria(int numeroComida) =>
+      _inner.generarComidaAleatoria(numeroComida);
+}
+
+class _ControlledHealthRepo implements MealHealthRepository {
+  int callCount = 0;
+  Future<MealHealthResult> Function(MealHealthEvaluationInput input)?
+  onEvaluate;
+
+  @override
+  Future<MealHealthResult> evaluateMealHealth(MealHealthEvaluationInput input) {
+    callCount++;
+    if (onEvaluate != null) {
+      return onEvaluate!(input);
+    }
+    return Future.value(
+      const MealHealthSuccess(
+        MealHealthEvaluation(
+          healthScore: 87,
+          razonHealthScore: 'Buen balance entre proteínas y fibra.',
+        ),
+      ),
+    );
+  }
+}
 
 ComidaItem _comida(String id, int kcal, {int score = 90}) {
   return ComidaItem(
@@ -263,5 +312,155 @@ void main() {
       expect(nivel(50), NivelScore.moderado);
       expect(nivel(49), NivelScore.bajo);
     });
+  });
+
+  group('On-demand Health Score persistence & concurrency', () {
+    test(
+      'evaluarHealthScoreComida persists score across day switches and updates diario average',
+      () async {
+        final spyRepo = _SpyDiarioRepository();
+        final healthRepo = _ControlledHealthRepo();
+        final completer = Completer<MealHealthResult>();
+        healthRepo.onEvaluate = (_) => completer.future;
+
+        final diarioVm = DiarioViewModel(
+          repository: spyRepo,
+          evaluateMealHealthUseCase: EvaluateMealHealthUseCase(
+            repository: healthRepo,
+          ),
+        );
+        addTearDown(diarioVm.dispose);
+
+        final meal = ComidaItem(
+          id: 'unscored_1',
+          titulo: 'Bowl casero',
+          hora: '13:15',
+          ingredientes: [
+            ComidaIngrediente.manual(
+              id: 'i1',
+              nombre: 'Pollo',
+              gramos: 150,
+              calorias: 165,
+              proteinas: 31,
+              carbohidratos: 0,
+              grasas: 3.6,
+            ),
+          ],
+        );
+        diarioVm.registrarComida(meal);
+        expect(diarioVm.buscarComidaPorId('unscored_1')?.healthScore, isNull);
+
+        final evalFuture = diarioVm.evaluarHealthScoreComida('unscored_1');
+        expect(diarioVm.isEvaluatingHealthScore('unscored_1'), isTrue);
+
+        // Double-tap on the same meal is blocked.
+        expect(await diarioVm.evaluarHealthScoreComida('unscored_1'), isFalse);
+        expect(healthRepo.callCount, 1);
+
+        // Switch to another day while evaluation is in flight.
+        diarioVm.seleccionarDia(29);
+        expect(diarioVm.diaSeleccionadoIndex, 29);
+
+        completer.complete(
+          const MealHealthSuccess(
+            MealHealthEvaluation(
+              healthScore: 89,
+              razonHealthScore: 'Rico en proteínas magras.',
+            ),
+          ),
+        );
+        expect(await evalFuture, isTrue);
+
+        final persisted = diarioVm.buscarComidaPorId('unscored_1');
+        expect(persisted?.healthScore, 89);
+        expect(persisted?.explicacionHealthScore, 'Rico en proteínas magras.');
+        expect(persisted?.healthScoreDesactualizado, isFalse);
+        expect(
+          spyRepo.lastSavedDias?[30]?.comidas.any(
+            (c) => c.id == 'unscored_1' && c.healthScore == 89,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'evaluarHealthScoreComida drops stale result on mid-flight edit or delete and preserves score on error',
+      () async {
+        final spyRepo = _SpyDiarioRepository();
+        final healthRepo = _ControlledHealthRepo();
+        final diarioVm = DiarioViewModel(
+          repository: spyRepo,
+          evaluateMealHealthUseCase: EvaluateMealHealthUseCase(
+            repository: healthRepo,
+          ),
+        );
+        addTearDown(diarioVm.dispose);
+
+        final meal = ComidaItem(
+          id: 'race_meal',
+          titulo: 'Pasta',
+          hora: '20:00',
+          healthScore: 70,
+          explicacionHealthScore: 'Score previo.',
+          ingredientes: [
+            ComidaIngrediente.manual(
+              id: 'i1',
+              nombre: 'Fideos',
+              gramos: 100,
+              calorias: 350,
+              proteinas: 12,
+              carbohidratos: 70,
+              grasas: 2,
+            ),
+          ],
+        );
+        diarioVm.registrarComida(meal);
+
+        // Mid-flight edit drops stale response.
+        final editCompleter = Completer<MealHealthResult>();
+        healthRepo.onEvaluate = (_) => editCompleter.future;
+        final pendingEdit = diarioVm.evaluarHealthScoreComida('race_meal');
+        diarioVm.actualizarComida(
+          meal.copyWith(
+            ingredientes: [meal.ingredientes.first.conGramos(200)],
+            healthScoreDesactualizado: true,
+          ),
+        );
+        editCompleter.complete(
+          const MealHealthSuccess(
+            MealHealthEvaluation(
+              healthScore: 95,
+              razonHealthScore: 'Obsoleta.',
+            ),
+          ),
+        );
+        expect(await pendingEdit, isFalse);
+        expect(diarioVm.buscarComidaPorId('race_meal')?.healthScore, 70);
+
+        // Error keeps prior score and emits HealthScoreEvalError.
+        healthRepo.onEvaluate = (_) async =>
+            const MealHealthError(ScannerTimeoutFailure());
+        expect(await diarioVm.evaluarHealthScoreComida('race_meal'), isFalse);
+        expect(diarioVm.buscarComidaPorId('race_meal')?.healthScore, 70);
+        expect(
+          diarioVm.healthScoreStateFor('race_meal'),
+          isA<HealthScoreEvalError>(),
+        );
+
+        // Mid-flight delete ignores result cleanly.
+        final delCompleter = Completer<MealHealthResult>();
+        healthRepo.onEvaluate = (_) => delCompleter.future;
+        final pendingDel = diarioVm.evaluarHealthScoreComida('race_meal');
+        diarioVm.eliminarComida('race_meal');
+        delCompleter.complete(
+          const MealHealthSuccess(
+            MealHealthEvaluation(healthScore: 80, razonHealthScore: 'Late'),
+          ),
+        );
+        expect(await pendingDel, isFalse);
+        expect(diarioVm.buscarComidaPorId('race_meal'), isNull);
+      },
+    );
   });
 }

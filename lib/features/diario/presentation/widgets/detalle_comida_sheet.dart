@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
 import '../../domain/entities/comida_item.dart';
+import '../viewmodels/diario_viewmodel.dart';
+import '../viewmodels/health_score_eval_state.dart';
 import 'editar_comida_sheet.dart';
+import 'health_score_badge.dart';
+import 'health_score_detail_sheet.dart';
 
 class DetalleComidaSheet extends StatelessWidget {
   final ComidaItem comida;
@@ -28,11 +33,22 @@ class DetalleComidaSheet extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmarEliminar(BuildContext context) async {
+  DiarioViewModel? _tryWatchDiario(BuildContext context) {
+    try {
+      return Provider.of<DiarioViewModel>(context, listen: true);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  Future<void> _confirmarEliminar(
+    BuildContext context,
+    ComidaItem liveComida,
+  ) async {
     final confirmado = await ConfirmDeleteDialog.show(
       context,
       titulo: '¿Eliminar comida?',
-      mensaje: 'Se eliminará "${comida.encabezadoTipo}" de tus comidas.',
+      mensaje: 'Se eliminará "${liveComida.encabezadoTipo}" de tus comidas.',
     );
     if (confirmado && context.mounted) {
       onDelete();
@@ -40,121 +56,27 @@ class DetalleComidaSheet extends StatelessWidget {
     }
   }
 
-  void _mostrarExplicacionScore(BuildContext context, ComidaItem comida) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
-        decoration: const BoxDecoration(
-          color: AppColors.cardWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF27AE60).withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_rounded,
-                    color: Color(0xFF27AE60),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Health Score · ${comida.healthScore}/100',
-                        style: AppTextStyles.title(
-                          size: 16,
-                          weight: FontWeight.w900,
-                          color: AppColors.forestDark,
-                        ),
-                      ),
-                      Text(
-                        'Evaluación nutricional de Gemini IA',
-                        style: AppTextStyles.body(
-                          size: 11.5,
-                          weight: FontWeight.w600,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.scaffoldBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.borderLight),
-              ),
-              child: Text(
-                comida.explicacionHealthScore ??
-                    'Aporte balanceado de nutrientes, con predominancia de alimentos reales y bajo nivel de ultraprocesados.',
-                style: AppTextStyles.body(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: AppColors.forestDark,
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.forestDark,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  'Entendido',
-                  style: AppTextStyles.body(
-                    size: 13.5,
-                    weight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  void _openHealthScoreDetail(
+    BuildContext context,
+    DiarioViewModel diarioVM,
+    String comidaId,
+  ) {
+    HealthScoreDetailSheet.show(
+      context,
+      listenable: diarioVM,
+      readSnapshot: () => diarioVM.healthScoreSnapshotFor(comidaId),
+      onEvaluate: () => diarioVM.evaluarHealthScoreComida(comidaId),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final diarioVM = _tryWatchDiario(context);
+    final liveComida = diarioVM?.buscarComidaPorId(comida.id) ?? comida;
+    final evalState =
+        diarioVM?.healthScoreStateFor(liveComida.id) ??
+        const HealthScoreEvalIdle();
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
       decoration: const BoxDecoration(
@@ -176,7 +98,7 @@ class DetalleComidaSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          // Header minimalista sin botones redundantes
+          // Header minimalista con badge interactivo de Health Score
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -189,7 +111,7 @@ class DetalleComidaSheet extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: Icon(
-                  comida.icono,
+                  liveComida.icono,
                   color: AppColors.forestDark,
                   size: 32,
                 ),
@@ -200,7 +122,7 @@ class DetalleComidaSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      comida.encabezadoTipo,
+                      liveComida.encabezadoTipo,
                       style: AppTextStyles.title(
                         size: 17,
                         weight: FontWeight.w900,
@@ -208,67 +130,41 @@ class DetalleComidaSheet extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.inputBg,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Hora: ${comida.hora} hs',
+                            'Hora: ${liveComida.hora} hs',
                             style: AppTextStyles.body(
-                              size: 11,
+                              size: 11.5,
                               weight: FontWeight.w700,
-                              color: AppColors.textMuted,
+                              color: AppColors.textMutedAccessible,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: comida.explicacionHealthScore != null
-                              ? () => _mostrarExplicacionScore(context, comida)
+                        HealthScoreBadge(
+                          healthScore: liveComida.healthScore,
+                          isStale: liveComida.healthScoreDesactualizado,
+                          isLoading: evalState is HealthScoreEvaluating,
+                          hasError: evalState is HealthScoreEvalError,
+                          onTap: diarioVM != null
+                              ? () => _openHealthScoreDetail(
+                                  context,
+                                  diarioVM,
+                                  liveComida.id,
+                                )
                               : null,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.pistachio.withValues(
-                                alpha: 0.35,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Score: ${comida.healthScore}/100',
-                                  style: AppTextStyles.body(
-                                    size: 11,
-                                    weight: FontWeight.w800,
-                                    color: AppColors.forestDark,
-                                  ),
-                                ),
-                                if (comida.explicacionHealthScore != null) ...[
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.help_outline_rounded,
-                                    size: 12.5,
-                                    color: AppColors.forestDark.withValues(
-                                      alpha: 0.65,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -305,7 +201,7 @@ class DetalleComidaSheet extends StatelessWidget {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(
-                          '${comida.calorias}',
+                          '${liveComida.calorias}',
                           style: AppTextStyles.number(
                             size: 28,
                             weight: FontWeight.w900,
@@ -325,7 +221,7 @@ class DetalleComidaSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (comida.metaCalorias != null)
+                if (liveComida.metaCalorias != null)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -336,7 +232,7 @@ class DetalleComidaSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      'Meta: ${comida.metaCalorias} kcal',
+                      'Meta: ${liveComida.metaCalorias} kcal',
                       style: AppTextStyles.number(
                         size: 12,
                         weight: FontWeight.w800,
@@ -354,21 +250,21 @@ class DetalleComidaSheet extends StatelessWidget {
               Expanded(
                 child: _MacroPill(
                   label: 'Proteínas',
-                  value: '${comida.proteinas.round()}g',
+                  value: '${liveComida.proteinas.round()}g',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MacroPill(
                   label: 'Carbos',
-                  value: '${comida.carbohidratos.round()}g',
+                  value: '${liveComida.carbohidratos.round()}g',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MacroPill(
                   label: 'Grasas',
-                  value: '${comida.grasas.round()}g',
+                  value: '${liveComida.grasas.round()}g',
                 ),
               ),
             ],
@@ -379,11 +275,11 @@ class DetalleComidaSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Ingredientes (${comida.ingredientes.length})',
+                'Ingredientes (${liveComida.ingredientes.length})',
                 style: AppTextStyles.title(size: 14.5, weight: FontWeight.w800),
               ),
               Text(
-                '${comida.ingredientes.fold(0.0, (acc, i) => acc + i.gramos).round()}g total',
+                '${liveComida.ingredientes.fold(0.0, (acc, i) => acc + i.gramos).round()}g total',
                 style: AppTextStyles.body(
                   size: 12,
                   weight: FontWeight.w700,
@@ -393,7 +289,7 @@ class DetalleComidaSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          if (comida.ingredientes.isEmpty)
+          if (liveComida.ingredientes.isEmpty)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -402,7 +298,7 @@ class DetalleComidaSheet extends StatelessWidget {
                 border: Border.all(color: AppColors.borderLight),
               ),
               child: Text(
-                comida.detalleComida,
+                liveComida.detalleComida,
                 style: AppTextStyles.body(
                   size: 13,
                   weight: FontWeight.w600,
@@ -411,7 +307,7 @@ class DetalleComidaSheet extends StatelessWidget {
               ),
             )
           else
-            ...comida.ingredientes.map(
+            ...liveComida.ingredientes.map(
               (item) => Container(
                 margin: const EdgeInsets.only(bottom: 6),
                 padding: const EdgeInsets.symmetric(
@@ -517,7 +413,7 @@ class DetalleComidaSheet extends StatelessWidget {
                   ),
                   onPressed: () {
                     Navigator.pop(context);
-                    EditarComidaSheet.show(context, comida: comida);
+                    EditarComidaSheet.show(context, comida: liveComida);
                   },
                 ),
               ),
@@ -544,7 +440,7 @@ class DetalleComidaSheet extends StatelessWidget {
                       color: AppColors.alertRed,
                     ),
                   ),
-                  onPressed: () => _confirmarEliminar(context),
+                  onPressed: () => _confirmarEliminar(context, liveComida),
                 ),
               ),
             ],

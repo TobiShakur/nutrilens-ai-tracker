@@ -220,5 +220,53 @@ void main() {
         expect(metricasVacia.topGrasas, isNull);
       },
     );
+
+    test(
+      'healthScorePromedio ignores unscored null meals and returns 0 when none are scored',
+      () async {
+        final perfilVm = PerfilViewModel(repository: PerfilRepositoryImpl());
+        addTearDown(perfilVm.dispose);
+        await perfilVm.inicializar(const [
+          DiarioDia(
+            diaIndex: 30,
+            diaNombre: 'Hoy',
+            comidas: [
+              ComidaItem(
+                id: 's1',
+                titulo: 'Scored',
+                hora: '08:00',
+                calorias: 300,
+                healthScore: 90,
+              ),
+              ComidaItem(
+                id: 'u1',
+                titulo: 'Unscored',
+                hora: '13:00',
+                calorias: 500,
+                healthScore: null,
+              ),
+            ],
+          ),
+        ]);
+        expect(perfilVm.metricas!.healthScorePromedio, 90);
+
+        await perfilVm.recalcularMetricas(const [
+          DiarioDia(
+            diaIndex: 30,
+            diaNombre: 'Hoy',
+            comidas: [
+              ComidaItem(
+                id: 'u1',
+                titulo: 'Unscored only',
+                hora: '13:00',
+                calorias: 500,
+                healthScore: null,
+              ),
+            ],
+          ),
+        ]);
+        expect(perfilVm.metricas!.healthScorePromedio, 0);
+      },
+    );
   });
 }

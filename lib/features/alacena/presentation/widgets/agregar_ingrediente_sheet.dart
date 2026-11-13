@@ -108,7 +108,10 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
     setState(() {
       _nombreCtrl.text = producto.nombre;
       _marcaCtrl.text = producto.marca;
-      _porcionCtrl.text = producto.porcionGramos.round().toString();
+      _porcionCtrl.text = producto.porcionGramos
+          .clamp(1.0, 10000.0)
+          .round()
+          .toString();
       _caloriasCtrl.text = producto.calorias.toString();
       _proteinasCtrl.text = producto.proteinas.toString();
       _carbosCtrl.text = producto.carbohidratos.toString();
@@ -137,7 +140,7 @@ class _AgregarIngredienteSheetState extends State<AgregarIngredienteSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '¡Datos autocompletados desde ${producto.fuente}!',
+                    'Producto cargado',
                     style: AppTextStyles.body(
                       size: 13,
                       color: Colors.white,

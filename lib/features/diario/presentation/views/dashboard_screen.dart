@@ -8,9 +8,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/diario_dia.dart';
 import '../viewmodels/diario_viewmodel.dart';
+import '../viewmodels/health_score_eval_state.dart';
 import '../widgets/calorie_ring_widget.dart';
 import '../widgets/detalle_comida_sheet.dart';
 import '../widgets/health_score_banner.dart';
+import '../widgets/health_score_detail_sheet.dart';
 import '../widgets/macro_row_widget.dart';
 import '../widgets/meal_card_widget.dart';
 import '../widgets/week_selector.dart';
@@ -52,8 +54,22 @@ class DashboardScreen extends StatelessWidget {
               itemCount: dia.comidas.length,
               itemBuilder: (context, index) {
                 final comida = dia.comidas[index];
+                final evalState = vm.healthScoreStateFor(comida.id);
                 return MealCardWidget(
                   comida: comida,
+                  isEvaluatingScore: evalState is HealthScoreEvaluating,
+                  hasScoreError: evalState is HealthScoreEvalError,
+                  onScoreTap: () {
+                    final diarioVM = context.read<DiarioViewModel>();
+                    HealthScoreDetailSheet.show(
+                      context,
+                      listenable: diarioVM,
+                      readSnapshot: () =>
+                          diarioVM.healthScoreSnapshotFor(comida.id),
+                      onEvaluate: () =>
+                          diarioVM.evaluarHealthScoreComida(comida.id),
+                    );
+                  },
                   onTap: () => DetalleComidaSheet.show(
                     context,
                     comida: comida,

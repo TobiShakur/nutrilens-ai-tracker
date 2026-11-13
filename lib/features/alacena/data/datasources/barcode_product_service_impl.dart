@@ -1,62 +1,91 @@
+import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/network/log_sanitizer.dart';
 import '../../domain/entities/barcode_product_data.dart';
+import '../../domain/entities/barcode_validator.dart';
+import '../../domain/failures/barcode_scan_failure.dart';
 import '../../domain/services/barcode_product_service.dart';
 
 /// Implementación de producción para la resolución de productos por código de barras
-/// (vía Open Food Facts API v2 con fallback heurístico) y visión artificial (Gemini 2.5 Flash).
+/// (Open Food Facts API v2 con fallback condicional a Gemini) y visión artificial.
 class BarcodeProductServiceImpl implements BarcodeProductService {
+  static final Uri _geminiPrimaryUrl = Uri.parse(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+  );
+  static final Uri _geminiFallbackUrl = Uri.parse(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',
+  );
+
   final http.Client _httpClient;
   final String? apiKey;
 
   BarcodeProductServiceImpl({http.Client? httpClient, this.apiKey})
     : _httpClient = httpClient ?? http.Client();
 
-  String get _geminiKey => apiKey ?? ApiConstants.geminiApiKey;
+  String get _geminiKey => (apiKey ?? ApiConstants.geminiApiKey).trim();
 
   @override
   Future<BarcodeProductData?> buscarPorCodigoBarras(String codigo) async {
-    final sanitized = codigo.trim().replaceAll(RegExp(r'[^0-9]'), '');
-    if (sanitized.isEmpty) return null;
+    final sanitized = BarcodeValidator.limpiar(codigo);
+    if (!BarcodeValidator.esCodigoValido(sanitized)) {
+      throw const BarcodeCodigoInvalidoFailure();
+    }
 
     // 1. Consulta prioritaria a Open Food Facts
+    final offUrl = Uri.parse(
+      'https://world.openfoodfacts.org/api/v2/product/$sanitized.json',
+    );
+
+    final http.Response response;
     try {
-      final offUrl = Uri.parse(
-        'https://world.openfoodfacts.org/api/v2/product/$sanitized.json',
-      );
-      final response = await _httpClient
+      response = await _httpClient
           .get(
             offUrl,
-            headers: {
+            headers: const {
               'User-Agent':
-                  'NutriLensAI/1.0 (nutrilens@fitiafake.app; flutter-web)',
+                  'NutriLensAI/1.0 (https://github.com/TobiShakur/nutrilens-ai-tracker)',
               'Accept': 'application/json',
             },
           )
           .timeout(const Duration(seconds: 8));
-
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        if (decoded is Map<String, dynamic> && decoded['status'] == 1) {
-          final product = decoded['product'] as Map<String, dynamic>?;
-          if (product != null) {
-            return _parsearOpenFoodFacts(product, sanitized);
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('[BarcodeService] Error al consultar Open Food Facts: $e');
+    } on TimeoutException {
+      throw const BarcodeTimeoutFailure();
+    } on Exception catch (e) {
+      LogSanitizer.logDebug(
+        'BarcodeService',
+        'Error de red al consultar Open Food Facts: $e',
+      );
+      throw const BarcodeRedFailure();
     }
 
-    // 2. Si Open Food Facts no lo tiene y contamos con Gemini API Key, fallback con IA
-    if (_geminiKey.isNotEmpty) {
+    if (response.statusCode == 200) {
+      final dynamic decoded;
       try {
-        return await _consultarGeminiPorCodigo(sanitized);
-      } catch (e) {
-        debugPrint('[BarcodeService] Fallback Gemini falló: $e');
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw const BarcodeRespuestaInvalidaFailure();
       }
+
+      if (decoded is Map<String, dynamic> && decoded['status'] == 1) {
+        final product = decoded['product'];
+        if (product is Map<String, dynamic>) {
+          return _parsearOpenFoodFacts(product, sanitized);
+        }
+      }
+    } else if (response.statusCode == 429) {
+      throw const BarcodeRateLimitFailure();
+    } else if (response.statusCode >= 500) {
+      throw BarcodeApiNoDisponibleFailure(statusCode: response.statusCode);
+    } else if (response.statusCode != 404) {
+      throw BarcodeApiNoDisponibleFailure(statusCode: response.statusCode);
+    }
+
+    // 2. Fallback opcional con Gemini solo cuando OFF no tiene el producto y hay clave
+    if (_geminiKey.isNotEmpty) {
+      return _consultarGeminiPorCodigo(sanitized);
     }
 
     return null;
@@ -67,21 +96,18 @@ class BarcodeProductServiceImpl implements BarcodeProductService {
     required Uint8List bytes,
     required String mimeType,
   }) async {
-    if (bytes.isEmpty) return null;
-    final key = _geminiKey;
-    if (key.isEmpty) {
-      throw StateError(
-        'Se requiere GEMINI_API_KEY para analizar fotos de etiquetas.',
-      );
+    final falloImagen = BarcodeValidator.validarImagenEtiqueta(bytes, mimeType);
+    if (falloImagen != null) {
+      throw BarcodeImagenInvalidaFailure(falloImagen);
     }
 
+    final key = _geminiKey;
+    if (key.isEmpty) {
+      throw const BarcodeApiKeyFaltanteFailure();
+    }
+
+    final mimeNormalizado = BarcodeValidator.normalizarMime(mimeType);
     final base64Image = base64Encode(bytes);
-    final primaryUrl = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$key',
-    );
-    final fallbackUrl = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$key',
-    );
 
     const prompt = '''
 Sos un sistema de visión artificial y nutrición de máxima precisión.
@@ -100,7 +126,10 @@ TAREAS:
         {
           'parts': [
             {
-              'inline_data': {'mime_type': mimeType, 'data': base64Image},
+              'inline_data': {
+                'mime_type': mimeNormalizado,
+                'data': base64Image,
+              },
             },
             {'text': prompt},
           ],
@@ -108,116 +137,48 @@ TAREAS:
       ],
       'generationConfig': {
         'response_mime_type': 'application/json',
-        'response_schema': {
-          'type': 'OBJECT',
-          'properties': {
-            'nombre': {'type': 'STRING'},
-            'marca': {'type': 'STRING'},
-            'porcionGramos': {'type': 'NUMBER'},
-            'calorias': {'type': 'INTEGER'},
-            'proteinas': {'type': 'NUMBER'},
-            'carbos': {'type': 'NUMBER'},
-            'grasas': {'type': 'NUMBER'},
-            'categoriaSugerida': {'type': 'STRING'},
-            'codigoBarras': {'type': 'STRING'},
-          },
-          'required': [
-            'nombre',
-            'porcionGramos',
-            'calorias',
-            'proteinas',
-            'carbos',
-            'grasas',
-          ],
-        },
+        'response_schema': _geminiProductSchema(incluirCodigoBarras: true),
       },
     });
 
-    http.Response response;
-    try {
-      response = await _httpClient
-          .post(
-            primaryUrl,
-            headers: {'Content-Type': 'application/json'},
-            body: body,
-          )
-          .timeout(const Duration(seconds: 18));
+    final response = await _postGeminiConRetrySelectivo(
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': key},
+      body: body,
+      timeout: const Duration(seconds: 18),
+    );
 
-      if (response.statusCode != 200) {
-        response = await _httpClient
-            .post(
-              fallbackUrl,
-              headers: {'Content-Type': 'application/json'},
-              body: body,
-            )
-            .timeout(const Duration(seconds: 18));
-      }
-    } catch (_) {
-      response = await _httpClient
-          .post(
-            fallbackUrl,
-            headers: {'Content-Type': 'application/json'},
-            body: body,
-          )
-          .timeout(const Duration(seconds: 18));
-    }
+    final parsed = _extraerJsonProductoGemini(response.body);
+    if (parsed == null) return null;
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Fallo en API de Gemini Vision (status ${response.statusCode})',
-      );
-    }
-
-    final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = jsonMap['candidates'] as List?;
-    if (candidates == null || candidates.isEmpty) return null;
-
-    final content = candidates[0]['content'];
-    final parts = content['parts'] as List;
-    final text = parts[0]['text'] as String;
-
-    final parsed = jsonDecode(text) as Map<String, dynamic>;
-    final nombre = (parsed['nombre'] as String?)?.trim();
-    if (nombre == null || nombre.isEmpty) return null;
-
-    final porcion = _toDouble(parsed['porcionGramos'], fallback: 100.0);
-    final calorias = _toInt(parsed['calorias'], fallback: 0);
-    final proteinas = _toDouble(parsed['proteinas'], fallback: 0.0);
-    final carbos = _toDouble(parsed['carbos'], fallback: 0.0);
-    final grasas = _toDouble(parsed['grasas'], fallback: 0.0);
-    final marca = (parsed['marca'] as String?)?.trim() ?? '';
-    final categoria = parsed['categoriaSugerida'] as String?;
-    final barcode = (parsed['codigoBarras'] as String?)?.trim();
-
-    return BarcodeProductData(
-      nombre: nombre,
-      marca: marca,
-      porcionGramos: porcion > 0 ? porcion : 100.0,
-      calorias: calorias >= 0 ? calorias : 0,
-      proteinas: proteinas >= 0 ? proteinas : 0.0,
-      carbohidratos: carbos >= 0 ? carbos : 0.0,
-      grasas: grasas >= 0 ? grasas : 0.0,
-      categoriaIdSugerida: categoria,
-      codigoBarras: barcode?.isNotEmpty == true ? barcode : null,
+    return _construirProductoNormalizado(
+      nombreRaw: parsed['nombre'],
+      marcaRaw: parsed['marca'],
+      porcionRaw: parsed['porcionGramos'],
+      caloriasRaw: parsed['calorias'],
+      proteinasRaw: parsed['proteinas'],
+      carbosRaw: parsed['carbos'],
+      grasasRaw: parsed['grasas'],
+      categoriaRaw: parsed['categoriaSugerida'],
+      codigoBarrasRaw: parsed['codigoBarras'],
       fuente: 'Gemini Vision AI',
     );
   }
 
-  BarcodeProductData _parsearOpenFoodFacts(
+  BarcodeProductData? _parsearOpenFoodFacts(
     Map<String, dynamic> product,
     String codigo,
   ) {
-    final nombre =
-        (product['product_name_es'] as String?)?.trim().isNotEmpty == true
-        ? product['product_name_es'] as String
-        : (product['product_name'] as String?)?.trim().isNotEmpty == true
-        ? product['product_name'] as String
+    final nombreEs = (product['product_name_es'] as String?)?.trim() ?? '';
+    final nombreBase = (product['product_name'] as String?)?.trim() ?? '';
+    final nombre = nombreEs.isNotEmpty
+        ? nombreEs
+        : nombreBase.isNotEmpty
+        ? nombreBase
         : 'Producto $codigo';
 
     final marca = (product['brands'] as String?)?.split(',').first.trim() ?? '';
 
-    // Extracción de tamaño de porción
-    double porcion = 100.0;
+    var porcion = 100.0;
     if (product['serving_quantity'] != null) {
       porcion = _toDouble(product['serving_quantity'], fallback: 100.0);
     } else if (product['serving_size'] is String) {
@@ -228,11 +189,17 @@ TAREAS:
         porcion = _toDouble(match.group(1), fallback: 100.0);
       }
     }
-    if (porcion <= 0) porcion = 100.0;
+    if (!porcion.isFinite || porcion <= 0) {
+      porcion = 100.0;
+    } else {
+      porcion = porcion.clamp(1.0, 10000.0).toDouble();
+    }
 
-    final nutriments = product['nutriments'] as Map<String, dynamic>? ?? {};
+    final nutrimentsRaw = product['nutriments'];
+    final nutriments = nutrimentsRaw is Map<String, dynamic>
+        ? nutrimentsRaw
+        : const <String, dynamic>{};
 
-    // Si tenemos datos específicos por porción, los usamos; si no, por 100g y escalamos
     final tienePorcion = nutriments['energy-kcal_serving'] != null;
 
     double cal;
@@ -253,29 +220,28 @@ TAREAS:
       gras = _toDouble(nutriments['fat_100g']) * factor;
     }
 
-    // Fallback de energía si viene en kJ
     if (cal <= 0 && nutriments['energy_100g'] != null) {
       cal = (_toDouble(nutriments['energy_100g']) / 4.184) * (porcion / 100.0);
     }
 
-    return BarcodeProductData(
-      nombre: nombre,
-      marca: marca,
-      porcionGramos: porcion,
-      calorias: cal.round(),
-      proteinas: double.parse(prot.toStringAsFixed(1)),
-      carbohidratos: double.parse(carb.toStringAsFixed(1)),
-      grasas: double.parse(gras.toStringAsFixed(1)),
-      codigoBarras: codigo,
+    final calNormalizadas = cal.isFinite ? cal.clamp(0.0, 10000.0).round() : 0;
+
+    return _construirProductoNormalizado(
+      nombreRaw: nombre,
+      marcaRaw: marca,
+      porcionRaw: porcion,
+      caloriasRaw: calNormalizadas,
+      proteinasRaw: prot,
+      carbosRaw: carb,
+      grasasRaw: gras,
+      codigoBarrasRaw: codigo,
       fuente: 'Open Food Facts',
     );
   }
 
   Future<BarcodeProductData?> _consultarGeminiPorCodigo(String codigo) async {
     final key = _geminiKey;
-    final url = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$key',
-    );
+    if (key.isEmpty) return null;
 
     final prompt =
         '''
@@ -294,75 +260,220 @@ Si no lo conocés con absoluta certeza, respondé con null o un objeto vacío.
       ],
       'generationConfig': {
         'response_mime_type': 'application/json',
-        'response_schema': {
-          'type': 'OBJECT',
-          'properties': {
-            'nombre': {'type': 'STRING'},
-            'marca': {'type': 'STRING'},
-            'porcionGramos': {'type': 'NUMBER'},
-            'calorias': {'type': 'INTEGER'},
-            'proteinas': {'type': 'NUMBER'},
-            'carbos': {'type': 'NUMBER'},
-            'grasas': {'type': 'NUMBER'},
-            'categoriaSugerida': {'type': 'STRING'},
-          },
-          'required': [
-            'nombre',
-            'porcionGramos',
-            'calorias',
-            'proteinas',
-            'carbos',
-            'grasas',
-          ],
-        },
+        'response_schema': _geminiProductSchema(incluirCodigoBarras: false),
       },
     });
 
-    final res = await _httpClient
-        .post(url, headers: {'Content-Type': 'application/json'}, body: body)
-        .timeout(const Duration(seconds: 10));
+    final response = await _postGeminiConRetrySelectivo(
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': key},
+      body: body,
+      timeout: const Duration(seconds: 10),
+    );
 
-    if (res.statusCode == 200) {
-      final jsonMap = jsonDecode(res.body) as Map<String, dynamic>;
-      final candidates = jsonMap['candidates'] as List?;
-      if (candidates != null && candidates.isNotEmpty) {
-        final text = candidates[0]['content']['parts'][0]['text'] as String;
-        final parsed = jsonDecode(text) as Map<String, dynamic>;
-        final nombre = parsed['nombre'] as String?;
-        if (nombre != null && nombre.trim().isNotEmpty) {
-          return BarcodeProductData(
-            nombre: nombre.trim(),
-            marca: (parsed['marca'] as String?)?.trim() ?? '',
-            porcionGramos: _toDouble(parsed['porcionGramos'], fallback: 100.0),
-            calorias: _toInt(parsed['calorias'], fallback: 0),
-            proteinas: _toDouble(parsed['proteinas'], fallback: 0.0),
-            carbohidratos: _toDouble(parsed['carbos'], fallback: 0.0),
-            grasas: _toDouble(parsed['grasas'], fallback: 0.0),
-            categoriaIdSugerida: parsed['categoriaSugerida'] as String?,
-            codigoBarras: codigo,
-            fuente: 'Gemini AI Assistant',
-          );
-        }
+    final parsed = _extraerJsonProductoGemini(response.body);
+    if (parsed == null) return null;
+
+    return _construirProductoNormalizado(
+      nombreRaw: parsed['nombre'],
+      marcaRaw: parsed['marca'],
+      porcionRaw: parsed['porcionGramos'],
+      caloriasRaw: parsed['calorias'],
+      proteinasRaw: parsed['proteinas'],
+      carbosRaw: parsed['carbos'],
+      grasasRaw: parsed['grasas'],
+      categoriaRaw: parsed['categoriaSugerida'],
+      codigoBarrasRaw: codigo,
+      fuente: 'Gemini AI Assistant',
+    );
+  }
+
+  Future<http.Response> _postGeminiConRetrySelectivo({
+    required Map<String, String> headers,
+    required String body,
+    required Duration timeout,
+  }) async {
+    var debeReintentar = false;
+
+    try {
+      final response = await _httpClient
+          .post(_geminiPrimaryUrl, headers: headers, body: body)
+          .timeout(timeout);
+
+      if (response.statusCode == 200) return response;
+
+      if (response.statusCode == 404 || response.statusCode >= 500) {
+        debeReintentar = true;
+      } else {
+        _lanzarPorStatusHttp(response.statusCode, response.body);
       }
+    } on TimeoutException {
+      debeReintentar = true;
+    } on BarcodeScanFailure {
+      rethrow;
+    } on Exception catch (e) {
+      LogSanitizer.logDebug(
+        'BarcodeService',
+        'Error transitorio en Gemini primario: $e',
+      );
+      debeReintentar = true;
     }
-    return null;
+
+    if (!debeReintentar) {
+      throw const BarcodeApiNoDisponibleFailure();
+    }
+
+    try {
+      final fallbackResponse = await _httpClient
+          .post(_geminiFallbackUrl, headers: headers, body: body)
+          .timeout(timeout);
+
+      if (fallbackResponse.statusCode == 200) return fallbackResponse;
+      _lanzarPorStatusHttp(fallbackResponse.statusCode, fallbackResponse.body);
+    } on TimeoutException {
+      throw const BarcodeTimeoutFailure();
+    } on BarcodeScanFailure {
+      rethrow;
+    } on Exception catch (e) {
+      LogSanitizer.logDebug('BarcodeService', 'Error en fallback Gemini: $e');
+      throw const BarcodeRedFailure();
+    }
+  }
+
+  Never _lanzarPorStatusHttp(int statusCode, String responseBody) {
+    LogSanitizer.logDebug(
+      'BarcodeService',
+      'Respuesta no exitosa de Gemini status=$statusCode',
+      body: responseBody,
+    );
+    if (statusCode == 401 || statusCode == 403) {
+      throw const BarcodeApiKeyFaltanteFailure();
+    }
+    if (statusCode == 429) {
+      throw const BarcodeRateLimitFailure();
+    }
+    if (statusCode == 400) {
+      throw const BarcodeRespuestaInvalidaFailure();
+    }
+    throw BarcodeApiNoDisponibleFailure(statusCode: statusCode);
+  }
+
+  Map<String, dynamic>? _extraerJsonProductoGemini(String responseBody) {
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(responseBody);
+    } on FormatException {
+      throw const BarcodeRespuestaInvalidaFailure();
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw const BarcodeRespuestaInvalidaFailure();
+    }
+
+    final candidates = decoded['candidates'];
+    if (candidates is! List || candidates.isEmpty) return null;
+
+    final firstCandidate = candidates.first;
+    if (firstCandidate is! Map) return null;
+
+    final content = firstCandidate['content'];
+    if (content is! Map) return null;
+
+    final parts = content['parts'];
+    if (parts is! List || parts.isEmpty) return null;
+
+    final firstPart = parts.first;
+    if (firstPart is! Map) return null;
+
+    final text = firstPart['text'];
+    if (text is! String || text.trim().isEmpty) return null;
+
+    final dynamic parsed;
+    try {
+      parsed = jsonDecode(text);
+    } on FormatException {
+      throw const BarcodeRespuestaInvalidaFailure();
+    }
+
+    if (parsed is! Map<String, dynamic>) return null;
+    return parsed;
+  }
+
+  BarcodeProductData? _construirProductoNormalizado({
+    required dynamic nombreRaw,
+    dynamic marcaRaw,
+    required dynamic porcionRaw,
+    required dynamic caloriasRaw,
+    required dynamic proteinasRaw,
+    required dynamic carbosRaw,
+    required dynamic grasasRaw,
+    dynamic categoriaRaw,
+    dynamic codigoBarrasRaw,
+    required String fuente,
+  }) {
+    if (nombreRaw is! String || nombreRaw.trim().isEmpty) {
+      return null;
+    }
+
+    return BarcodeProductData.normalizar(
+      nombre: nombreRaw,
+      marca: marcaRaw is String ? marcaRaw : '',
+      porcionGramos: _toDouble(porcionRaw, fallback: 100.0),
+      calorias: _toInt(caloriasRaw, fallback: 0),
+      proteinas: _toDouble(proteinasRaw, fallback: 0.0),
+      carbohidratos: _toDouble(carbosRaw, fallback: 0.0),
+      grasas: _toDouble(grasasRaw, fallback: 0.0),
+      categoriaIdSugerida: categoriaRaw is String ? categoriaRaw : null,
+      codigoBarras: codigoBarrasRaw is String ? codigoBarrasRaw : null,
+      fuente: fuente,
+    );
+  }
+
+  static Map<String, dynamic> _geminiProductSchema({
+    required bool incluirCodigoBarras,
+  }) {
+    return {
+      'type': 'OBJECT',
+      'properties': {
+        'nombre': {'type': 'STRING'},
+        'marca': {'type': 'STRING'},
+        'porcionGramos': {'type': 'NUMBER'},
+        'calorias': {'type': 'INTEGER'},
+        'proteinas': {'type': 'NUMBER'},
+        'carbos': {'type': 'NUMBER'},
+        'grasas': {'type': 'NUMBER'},
+        'categoriaSugerida': {'type': 'STRING'},
+        if (incluirCodigoBarras) 'codigoBarras': {'type': 'STRING'},
+      },
+      'required': [
+        'nombre',
+        'porcionGramos',
+        'calorias',
+        'proteinas',
+        'carbos',
+        'grasas',
+      ],
+    };
   }
 
   static double _toDouble(dynamic val, {double fallback = 0.0}) {
     if (val == null) return fallback;
-    if (val is num) return val.toDouble();
-    if (val is String) {
-      return double.tryParse(val.replaceAll(',', '.')) ?? fallback;
-    }
-    return fallback;
+    final double? parsed = switch (val) {
+      num n => n.toDouble(),
+      String s => double.tryParse(s.trim().replaceAll(',', '.')),
+      _ => null,
+    };
+    if (parsed == null || !parsed.isFinite) return fallback;
+    return parsed;
   }
 
   static int _toInt(dynamic val, {int fallback = 0}) {
     if (val == null) return fallback;
-    if (val is num) return val.toInt();
-    if (val is String) {
-      return int.tryParse(val) ?? fallback;
-    }
-    return fallback;
+    final double? parsed = switch (val) {
+      int i => i.toDouble(),
+      num n => n.toDouble(),
+      String s => double.tryParse(s.trim().replaceAll(',', '.')),
+      _ => null,
+    };
+    if (parsed == null || !parsed.isFinite) return fallback;
+    return parsed.round();
   }
 }

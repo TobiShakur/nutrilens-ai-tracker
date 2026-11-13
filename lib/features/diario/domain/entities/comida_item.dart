@@ -14,8 +14,9 @@ class ComidaItem {
   final double? _proteinasBase;
   final double? _grasasBase;
   final double? _carbohidratosBase;
-  final int healthScore; // 1 a 100
+  final int? healthScore; // 0 to 100 when evaluated, null when unscored
   final String? explicacionHealthScore;
+  final bool healthScoreDesactualizado;
   final String hora;
   final IconData icono;
 
@@ -30,14 +31,21 @@ class ComidaItem {
     double? proteinas,
     double? grasas,
     double? carbohidratos,
-    this.healthScore = 85,
+    this.healthScore,
     this.explicacionHealthScore,
+    this.healthScoreDesactualizado = false,
     required this.hora,
     this.icono = Icons.restaurant_outlined,
   }) : _caloriasBase = calorias,
        _proteinasBase = proteinas,
        _grasasBase = grasas,
        _carbohidratosBase = carbohidratos;
+
+  bool get tieneHealthScore => healthScore != null;
+
+  bool get tieneExplicacionHealthScore =>
+      explicacionHealthScore != null &&
+      explicacionHealthScore!.trim().isNotEmpty;
 
   /// Si tiene ingredientes desglosados, se suman dinámicamente; si no, se usan las calorías base.
   int get calorias {
@@ -121,7 +129,10 @@ class ComidaItem {
     double? grasas,
     double? carbohidratos,
     int? healthScore,
+    bool clearHealthScore = false,
     String? explicacionHealthScore,
+    bool clearExplicacionHealthScore = false,
+    bool? healthScoreDesactualizado,
     String? hora,
     IconData? icono,
   }) {
@@ -136,9 +147,12 @@ class ComidaItem {
       proteinas: proteinas ?? _proteinasBase,
       grasas: grasas ?? _grasasBase,
       carbohidratos: carbohidratos ?? _carbohidratosBase,
-      healthScore: healthScore ?? this.healthScore,
-      explicacionHealthScore:
-          explicacionHealthScore ?? this.explicacionHealthScore,
+      healthScore: clearHealthScore ? null : (healthScore ?? this.healthScore),
+      explicacionHealthScore: clearExplicacionHealthScore
+          ? null
+          : (explicacionHealthScore ?? this.explicacionHealthScore),
+      healthScoreDesactualizado:
+          healthScoreDesactualizado ?? this.healthScoreDesactualizado,
       hora: hora ?? this.hora,
       icono: icono ?? this.icono,
     );
@@ -156,6 +170,7 @@ class ComidaItem {
     'carbohidratos': _carbohidratosBase,
     'healthScore': healthScore,
     'explicacionHealthScore': explicacionHealthScore,
+    'healthScoreDesactualizado': healthScoreDesactualizado,
     'hora': hora,
     'iconoName': _iconoName,
     'ingredientes': ingredientes.map((i) => i.toJson()).toList(),
@@ -201,6 +216,17 @@ class ComidaItem {
 
   factory ComidaItem.fromJson(Map<String, dynamic> json) {
     final rawIngredientes = json['ingredientes'] as List<dynamic>? ?? [];
+    final rawScore = json['healthScore'];
+    final int? parsedScore = (rawScore is num && rawScore.isFinite)
+        ? rawScore.round().clamp(0, 100)
+        : null;
+    final rawExplanation = json['explicacionHealthScore'];
+    final String? parsedExplanation =
+        (rawExplanation is String && rawExplanation.trim().isNotEmpty)
+        ? rawExplanation.trim()
+        : null;
+    final bool isStale = json['healthScoreDesactualizado'] as bool? ?? false;
+
     return ComidaItem(
       id: json['id'] as String,
       titulo: json['titulo'] as String,
@@ -211,8 +237,9 @@ class ComidaItem {
       proteinas: (json['proteinas'] as num?)?.toDouble(),
       grasas: (json['grasas'] as num?)?.toDouble(),
       carbohidratos: (json['carbohidratos'] as num?)?.toDouble(),
-      healthScore: (json['healthScore'] as num?)?.toInt() ?? 85,
-      explicacionHealthScore: json['explicacionHealthScore'] as String?,
+      healthScore: parsedScore,
+      explicacionHealthScore: parsedExplanation,
+      healthScoreDesactualizado: isStale,
       hora: json['hora'] as String? ?? '12:00',
       icono: _resolverIcono(json['iconoName'] as String?),
       ingredientes: rawIngredientes

@@ -1,3 +1,4 @@
+import '../../../../core/failures/scanner_failure.dart';
 import '../../domain/entities/alimento_conflicto_marca.dart';
 import '../../domain/entities/plato_detectado.dart';
 import 'comida_ingrediente_model.dart';
@@ -30,12 +31,18 @@ class PlatoDetectadoModel {
         ? explicacionRaw.trim()
         : 'Buen balance de nutrientes y alimentos frescos.';
 
+    final rawScore = json['healthScore'];
+    if (rawScore is! num || !rawScore.isFinite) {
+      throw const ScannerInvalidResponseFailure();
+    }
+    final parsedScore = rawScore.round().clamp(0, 100);
+
     return PlatoDetectadoModel(
       nombrePlato:
           (json['nombrePlato'] as String?)?.trim() ??
           (json['nombre'] as String?)?.trim() ??
           'Plato Detectado',
-      healthScore: ((json['healthScore'] as num?) ?? 85).toInt().clamp(1, 100),
+      healthScore: parsedScore,
       explicacionHealthScore: explicacion,
       ingredientes: items,
     );

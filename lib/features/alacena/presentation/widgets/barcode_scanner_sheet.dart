@@ -1,178 +1,68 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../scanner/data/services/image_picker_capture_service_impl.dart';
+import '../../../scanner/domain/services/image_capture_service.dart';
+import '../../data/datasources/barcode_demo_local_datasource.dart';
 import '../../data/datasources/barcode_product_service_impl.dart';
+import '../../domain/datasources/barcode_demo_datasource.dart';
+import '../../domain/entities/barcode_demo_chip.dart';
 import '../../domain/entities/barcode_product_data.dart';
 import '../../domain/services/barcode_product_service.dart';
-
-enum _ModoEscaneo { camara, codigo }
+import '../viewmodels/barcode_scanner_state.dart';
+import '../viewmodels/barcode_scanner_viewmodel.dart';
 
 /// Bottom Sheet modal interactivo para escanear productos por código de barras
 /// (Open Food Facts API) o mediante fotografía de etiquetas y empaques (Gemini Vision).
-class BarcodeScannerSheet extends StatefulWidget {
-  final BarcodeProductService? barcodeService;
-
-  const BarcodeScannerSheet({super.key, this.barcodeService});
+class BarcodeScannerSheet extends StatelessWidget {
+  const BarcodeScannerSheet({super.key});
 
   static Future<BarcodeProductData?> show(
     BuildContext context, {
-    BarcodeProductService? service,
+    BarcodeScannerViewModel? viewModelOverride,
   }) {
+    final Widget content;
+    if (viewModelOverride != null) {
+      content = ChangeNotifierProvider<BarcodeScannerViewModel>.value(
+        value: viewModelOverride,
+        child: const BarcodeScannerSheet(),
+      );
+    } else {
+      final barcodeService =
+          _tryRead<BarcodeProductService>(context) ??
+          BarcodeProductServiceImpl();
+      final imageCaptureService =
+          _tryRead<ImageCaptureService>(context) ??
+          ImagePickerCaptureServiceImpl();
+      final demoDatasource =
+          _tryRead<BarcodeDemoDatasource>(context) ??
+          const BarcodeDemoLocalDatasource();
+
+      content = ChangeNotifierProvider<BarcodeScannerViewModel>(
+        create: (_) => BarcodeScannerViewModel(
+          barcodeService: barcodeService,
+          imageCaptureService: imageCaptureService,
+          demoDatasource: demoDatasource,
+        ),
+        child: const BarcodeScannerSheet(),
+      );
+    }
+
     return showModalBottomSheet<BarcodeProductData>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => BarcodeScannerSheet(barcodeService: service),
+      builder: (_) => content,
     );
   }
 
-  @override
-  State<BarcodeScannerSheet> createState() => _BarcodeScannerSheetState();
-}
-
-class _BarcodeScannerSheetState extends State<BarcodeScannerSheet> {
-  late final BarcodeProductService _service;
-  final ImagePicker _picker = ImagePicker();
-  final TextEditingController _codigoCtrl = TextEditingController();
-
-  _ModoEscaneo _modo = _ModoEscaneo.camara;
-  bool _cargando = false;
-  String _mensajeCarga = '';
-  String? _error;
-  BarcodeProductData? _resultado;
-
-  static const List<({String label, String codigo})> _chipsDemostracion = [
-    (label: 'Nutella', codigo: '3017620422003'),
-    (label: 'Coca-Cola', codigo: '5449000000996'),
-    (label: 'Yogur EAN', codigo: '7790070507305'),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _service = widget.barcodeService ?? BarcodeProductServiceImpl();
-  }
-
-  @override
-  void dispose() {
-    _codigoCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _capturarConCamara() async {
+  static T? _tryRead<T>(BuildContext context) {
     try {
-      final xfile = await _picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 85,
-      );
-      if (xfile == null) return;
-      await _procesarBytesImagen(
-        await xfile.readAsBytes(),
-        xfile.mimeType ?? 'image/jpeg',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = 'No se pudo acceder a la cámara: $e');
-    }
-  }
-
-  Future<void> _elegirDeGaleria() async {
-    try {
-      final xfile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 85,
-      );
-      if (xfile == null) return;
-      await _procesarBytesImagen(
-        await xfile.readAsBytes(),
-        xfile.mimeType ?? 'image/jpeg',
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = 'No se pudo abrir la galería: $e');
-    }
-  }
-
-  Future<void> _procesarBytesImagen(Uint8List bytes, String mimeType) async {
-    setState(() {
-      _cargando = true;
-      _mensajeCarga = 'Analizando código y tabla nutricional con IA...';
-      _error = null;
-      _resultado = null;
-    });
-
-    try {
-      final data = await _service.analizarFotoEtiqueta(
-        bytes: bytes,
-        mimeType: mimeType,
-      );
-
-      if (!mounted) return;
-      if (data == null) {
-        setState(() {
-          _cargando = false;
-          _error =
-              'No se pudo detectar un producto legible. Probá enfocando mejor la tabla nutricional o el código.';
-        });
-      } else {
-        setState(() {
-          _cargando = false;
-          _resultado = data;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _cargando = false;
-        _error = 'Ocurrió un error al procesar la imagen: $e';
-      });
-    }
-  }
-
-  Future<void> _buscarCodigoManual([String? codigoOverride]) async {
-    final codigo = (codigoOverride ?? _codigoCtrl.text).trim();
-    if (codigo.isEmpty) {
-      setState(() => _error = 'Ingresá los números del código de barras.');
-      return;
-    }
-
-    FocusScope.of(context).unfocus();
-
-    setState(() {
-      _cargando = true;
-      _mensajeCarga = 'Consultando base de alimentos Open Food Facts...';
-      _error = null;
-      _resultado = null;
-    });
-
-    try {
-      final data = await _service.buscarPorCodigoBarras(codigo);
-
-      if (!mounted) return;
-      if (data == null) {
-        setState(() {
-          _cargando = false;
-          _error =
-              'No encontramos el producto con código $codigo en la base de datos.';
-        });
-      } else {
-        setState(() {
-          _cargando = false;
-          _resultado = data;
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _cargando = false;
-        _error = 'Error de conexión: $e';
-      });
+      return context.read<T>();
+    } on ProviderNotFoundException {
+      return null;
     }
   }
 
@@ -193,183 +83,150 @@ class _BarcodeScannerSheetState extends State<BarcodeScannerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Indicador de arrastre superior
-            Center(
-              child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+            const _DragHandle(),
             const SizedBox(height: 14),
-
-            // Encabezado
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ESCANEAR PRODUCTO',
-                      style: AppTextStyles.title(
-                        size: 16,
-                        weight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Código de barras o tabla nutricional',
-                      style: AppTextStyles.body(
-                        size: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 22),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+            _SheetHeader(onClose: () => Navigator.pop(context)),
             const SizedBox(height: 16),
-
-            // Selector de pestaña (Foto con IA vs Código Manual)
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.scaffoldBg,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _TabButton(
-                      label: 'Cámara / Foto (IA)',
-                      icon: Icons.camera_alt_rounded,
-                      isActive: _modo == _ModoEscaneo.camara,
-                      onTap: () => setState(() {
-                        _modo = _ModoEscaneo.camara;
-                        _error = null;
-                      }),
-                    ),
-                  ),
-                  Expanded(
-                    child: _TabButton(
-                      label: 'Código de Barras',
-                      icon: Icons.barcode_reader,
-                      isActive: _modo == _ModoEscaneo.codigo,
-                      onTap: () => setState(() {
-                        _modo = _ModoEscaneo.codigo;
-                        _error = null;
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const _ModeSelector(),
             const SizedBox(height: 18),
-
-            // Contenido según el modo o resultado
-            if (_cargando) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 36,
-                  horizontal: 20,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.scaffoldBg,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.forestDark,
+            Consumer<BarcodeScannerViewModel>(
+              builder: (context, vm, _) {
+                final state = vm.state;
+                return switch (state) {
+                  BarcodeScannerLoading(:final mensaje) => _LoadingCard(
+                    mensaje: mensaje,
+                  ),
+                  BarcodeScannerSuccess(:final producto) => _ResultadoCard(
+                    resultado: producto,
+                    onUsar: () => Navigator.pop(context, producto),
+                    onReintentar: () => context
+                        .read<BarcodeScannerViewModel>()
+                        .reiniciarEscaneo(),
+                  ),
+                  BarcodeScannerIdle() || BarcodeScannerError() => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (vm.modo == ModoEscaneoProducto.camara)
+                        _ModoCamaraView(
+                          onCamaraTap: () => context
+                              .read<BarcodeScannerViewModel>()
+                              .capturarConCamara(),
+                          onGaleriaTap: () => context
+                              .read<BarcodeScannerViewModel>()
+                              .seleccionarDeGaleria(),
+                        )
+                      else
+                        _ModoCodigoView(
+                          chips: vm.chipsDemo,
+                          onBuscar: (codigo) => context
+                              .read<BarcodeScannerViewModel>()
+                              .buscarPorCodigoBarras(codigo),
                         ),
-                        strokeWidth: 3,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _mensajeCarga,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.body(
-                        size: 13,
-                        weight: FontWeight.w700,
-                        color: AppColors.forestDark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (_resultado != null) ...[
-              _ResultadoCard(
-                resultado: _resultado!,
-                onUsar: () => Navigator.pop(context, _resultado),
-                onReintentar: () => setState(() {
-                  _resultado = null;
-                  _error = null;
-                }),
-              ),
-            ] else if (_modo == _ModoEscaneo.camara) ...[
-              _ModoCamaraView(
-                onCamaraTap: _capturarConCamara,
-                onGaleriaTap: _elegirDeGaleria,
-              ),
-            ] else ...[
-              _ModoCodigoView(
-                controller: _codigoCtrl,
-                chips: _chipsDemostracion,
-                onBuscar: () => _buscarCodigoManual(),
-                onChipTap: (cod) {
-                  _codigoCtrl.text = cod;
-                  _buscarCodigoManual(cod);
-                },
-              ),
-            ],
-
-            if (_error != null && !_cargando && _resultado == null) ...[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDECEA),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE57373), width: 1),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      color: Color(0xFFC62828),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: AppTextStyles.body(
-                          size: 12.5,
-                          weight: FontWeight.w600,
-                          color: const Color(0xFFC62828),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                      if (state case BarcodeScannerError(:final mensaje)) ...[
+                        const SizedBox(height: 14),
+                        _ErrorBanner(mensaje: mensaje),
+                      ],
+                    ],
+                  ),
+                };
+              },
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DragHandle extends StatelessWidget {
+  const _DragHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 38,
+        height: 4,
+        decoration: BoxDecoration(
+          color: AppColors.borderLight,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetHeader extends StatelessWidget {
+  final VoidCallback onClose;
+
+  const _SheetHeader({required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'ESCANEAR PRODUCTO',
+              style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Código de barras o tabla nutricional',
+              style: AppTextStyles.body(size: 12, color: AppColors.textMuted),
+            ),
+          ],
+        ),
+        IconButton(
+          icon: const Icon(Icons.close_rounded, size: 22),
+          onPressed: onClose,
+        ),
+      ],
+    );
+  }
+}
+
+class _ModeSelector extends StatelessWidget {
+  const _ModeSelector();
+
+  @override
+  Widget build(BuildContext context) {
+    final modo = context.select<BarcodeScannerViewModel, ModoEscaneoProducto>(
+      (vm) => vm.modo,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBg,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TabButton(
+              label: 'Foto',
+              icon: Icons.camera_alt_rounded,
+              isActive: modo == ModoEscaneoProducto.camara,
+              onTap: () => context.read<BarcodeScannerViewModel>().cambiarModo(
+                ModoEscaneoProducto.camara,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _TabButton(
+              label: 'Código de barras',
+              icon: Icons.barcode_reader,
+              isActive: modo == ModoEscaneoProducto.codigo,
+              onTap: () => context.read<BarcodeScannerViewModel>().cambiarModo(
+                ModoEscaneoProducto.codigo,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -424,6 +281,87 @@ class _TabButton extends StatelessWidget {
   }
 }
 
+class _LoadingCard extends StatelessWidget {
+  final String mensaje;
+
+  const _LoadingCard({required this.mensaje});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBg,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.forestDark),
+              strokeWidth: 3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            mensaje,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.body(
+              size: 13,
+              weight: FontWeight.w700,
+              color: AppColors.forestDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  final String mensaje;
+
+  const _ErrorBanner({required this.mensaje});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.alertRed.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.alertRed.withValues(alpha: 0.45),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.alertRed,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              mensaje,
+              style: AppTextStyles.body(
+                size: 12.5,
+                weight: FontWeight.w600,
+                color: AppColors.alertRed,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ModoCamaraView extends StatelessWidget {
   final VoidCallback onCamaraTap;
   final VoidCallback onGaleriaTap;
@@ -458,13 +396,13 @@ class _ModoCamaraView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Enfocá el empaque o la tabla nutricional',
+            'Sacale una foto al producto',
             textAlign: TextAlign.center,
             style: AppTextStyles.title(size: 14, weight: FontWeight.w800),
           ),
           const SizedBox(height: 4),
           Text(
-            'Gemini Vision leerá el código impreso, nombre, porción y macronutrientes al instante.',
+            'Escaneá el frente del envase o la tabla nutricional para cargar sus datos.',
             textAlign: TextAlign.center,
             style: AppTextStyles.body(size: 12, color: AppColors.textMuted),
           ),
@@ -515,7 +453,7 @@ class _ModoCamaraView extends StatelessWidget {
                   onPressed: onGaleriaTap,
                   icon: const Icon(Icons.photo_library_rounded, size: 18),
                   label: Text(
-                    'Galería',
+                    'Subir foto',
                     style: AppTextStyles.body(
                       size: 13,
                       weight: FontWeight.w800,
@@ -532,18 +470,29 @@ class _ModoCamaraView extends StatelessWidget {
   }
 }
 
-class _ModoCodigoView extends StatelessWidget {
-  final TextEditingController controller;
-  final List<({String label, String codigo})> chips;
-  final VoidCallback onBuscar;
-  final ValueChanged<String> onChipTap;
+class _ModoCodigoView extends StatefulWidget {
+  final List<BarcodeDemoChip> chips;
+  final ValueChanged<String> onBuscar;
 
-  const _ModoCodigoView({
-    required this.controller,
-    required this.chips,
-    required this.onBuscar,
-    required this.onChipTap,
-  });
+  const _ModoCodigoView({required this.chips, required this.onBuscar});
+
+  @override
+  State<_ModoCodigoView> createState() => _ModoCodigoViewState();
+}
+
+class _ModoCodigoViewState extends State<_ModoCodigoView> {
+  final TextEditingController _codigoCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _codigoCtrl.dispose();
+    super.dispose();
+  }
+
+  void _enviar([String? override]) {
+    FocusScope.of(context).unfocus();
+    widget.onBuscar(override ?? _codigoCtrl.text);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -554,12 +503,16 @@ class _ModoCodigoView extends StatelessWidget {
           children: [
             Expanded(
               child: TextField(
-                controller: controller,
+                controller: _codigoCtrl,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.search,
-                onSubmitted: (_) => onBuscar(),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(14),
+                ],
+                onSubmitted: (_) => _enviar(),
                 decoration: InputDecoration(
-                  hintText: 'Ej: 7790070507305 o 3017620422003',
+                  hintText: 'Ingresá el código de barras',
                   prefixIcon: const Icon(
                     Icons.qr_code_2_rounded,
                     size: 22,
@@ -598,7 +551,7 @@ class _ModoCodigoView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: onBuscar,
+              onPressed: _enviar,
               child: const Icon(
                 Icons.search_rounded,
                 size: 22,
@@ -609,7 +562,7 @@ class _ModoCodigoView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'O probá con estos alimentos de muestra:',
+          'Ejemplos rápidos:',
           style: AppTextStyles.body(
             size: 11.5,
             color: AppColors.textMuted,
@@ -620,7 +573,7 @@ class _ModoCodigoView extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 6,
-          children: chips.map((chip) {
+          children: widget.chips.map((chip) {
             return ActionChip(
               backgroundColor: AppColors.scaffoldBg,
               side: const BorderSide(color: AppColors.borderLight),
@@ -635,7 +588,10 @@ class _ModoCodigoView extends StatelessWidget {
                   color: AppColors.forestDark,
                 ),
               ),
-              onPressed: () => onChipTap(chip.codigo),
+              onPressed: () {
+                _codigoCtrl.text = chip.codigo;
+                _enviar(chip.codigo);
+              },
             );
           }).toList(),
         ),
@@ -694,10 +650,12 @@ class _ResultadoCard extends StatelessWidget {
                         weight: FontWeight.w800,
                       ),
                     ),
-                    if (resultado.marca.isNotEmpty) ...[
+                    if (resultado.marca.trim().isNotEmpty &&
+                        resultado.marca.trim().toLowerCase() !=
+                            'sin marca') ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Marca: ${resultado.marca}',
+                        resultado.marca.trim(),
                         style: AppTextStyles.body(
                           size: 12,
                           color: AppColors.textMuted,
@@ -705,33 +663,12 @@ class _ResultadoCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.forestDark,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '✓ ${resultado.fuente}',
-                        style: AppTextStyles.body(
-                          size: 10.5,
-                          weight: FontWeight.w700,
-                          color: AppColors.pistachio,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-
-          // Badges de información nutricional
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
@@ -760,7 +697,6 @@ class _ResultadoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.pistachio,
@@ -773,7 +709,7 @@ class _ResultadoCard extends StatelessWidget {
             ),
             onPressed: onUsar,
             child: Text(
-              'Autocompletar en mi Ingrediente',
+              'Confirmar',
               style: AppTextStyles.body(
                 size: 13.5,
                 weight: FontWeight.w900,
@@ -785,7 +721,7 @@ class _ResultadoCard extends StatelessWidget {
           TextButton(
             onPressed: onReintentar,
             child: Text(
-              'Escanear o buscar otro producto',
+              'Volver a escanear',
               style: AppTextStyles.body(
                 size: 12,
                 weight: FontWeight.w700,

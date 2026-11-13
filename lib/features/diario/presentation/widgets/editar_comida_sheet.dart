@@ -6,20 +6,51 @@ import '../../../../widgets/confirm_delete_dialog.dart';
 import '../../../alacena/presentation/widgets/selector_alacena_modal.dart';
 import '../../domain/entities/comida_ingrediente.dart';
 import '../../domain/entities/comida_item.dart';
+import '../../domain/usecases/evaluate_meal_health_usecase.dart';
 import '../viewmodels/diario_viewmodel.dart';
+import '../viewmodels/editar_comida_viewmodel.dart';
+import '../viewmodels/health_score_eval_state.dart';
+import 'health_score_badge.dart';
+import 'health_score_detail_sheet.dart';
 
 class EditarComidaSheet extends StatefulWidget {
   final ComidaItem comida;
 
   const EditarComidaSheet({super.key, required this.comida});
 
-  static Future<void> show(BuildContext context, {required ComidaItem comida}) {
+  static Future<void> show(
+    BuildContext context, {
+    required ComidaItem comida,
+    EditarComidaViewModel? viewModelOverride,
+  }) {
+    final evaluateUseCase = _tryReadEvaluateUseCase(context);
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => EditarComidaSheet(comida: comida),
+      builder: (_) => viewModelOverride != null
+          ? ChangeNotifierProvider<EditarComidaViewModel>.value(
+              value: viewModelOverride,
+              child: EditarComidaSheet(comida: comida),
+            )
+          : ChangeNotifierProvider<EditarComidaViewModel>(
+              create: (_) => EditarComidaViewModel(
+                comida: comida,
+                evaluateMealHealthUseCase: evaluateUseCase,
+              ),
+              child: EditarComidaSheet(comida: comida),
+            ),
     );
+  }
+
+  static EvaluateMealHealthUseCase? _tryReadEvaluateUseCase(
+    BuildContext context,
+  ) {
+    try {
+      return context.read<EvaluateMealHealthUseCase>();
+    } on ProviderNotFoundException {
+      return null;
+    }
   }
 
   @override
@@ -28,152 +59,59 @@ class EditarComidaSheet extends StatefulWidget {
 
 class _EditarComidaSheetState extends State<EditarComidaSheet> {
   late final TextEditingController _tituloCtrl;
-  late List<ComidaIngrediente> _ingredientes;
-  late String _tipoComida;
-
-  final List<String> _tiposDisponibles = const [
-    'Desayuno',
-    'Almuerzo',
-    'Merienda',
-    'Cena',
-    'Snack',
-  ];
+  EditarComidaViewModel? _fallbackVm;
 
   @override
   void initState() {
     super.initState();
     _tituloCtrl = TextEditingController(text: widget.comida.titulo);
-    _ingredientes = List<ComidaIngrediente>.from(widget.comida.ingredientes);
-    _tipoComida = widget.comida.encabezadoTipo;
-    if (!_tiposDisponibles.contains(_tipoComida)) {
-      _tipoComida = _tiposDisponibles.first;
-    }
   }
 
   @override
   void dispose() {
     _tituloCtrl.dispose();
+    _fallbackVm?.dispose();
     super.dispose();
   }
 
-  int get _totalCalorias => _ingredientes.fold(0, (acc, i) => acc + i.calorias);
-
-  double get _totalProteinas => double.parse(
-    _ingredientes.fold(0.0, (acc, i) => acc + i.proteinas).toStringAsFixed(1),
-  );
-
-  double get _totalCarbos => double.parse(
-    _ingredientes
-        .fold(0.0, (acc, i) => acc + i.carbohidratos)
-        .toStringAsFixed(1),
-  );
-
-  double get _totalGrasas => double.parse(
-    _ingredientes.fold(0.0, (acc, i) => acc + i.grasas).toStringAsFixed(1),
-  );
-
-  void _ajustarGramos(int index, double delta) {
-    setState(() {
-      final actual = _ingredientes[index];
-      final nuevosGramos = (actual.gramos + delta).clamp(5.0, 1000.0);
-      _ingredientes[index] = actual.conGramos(nuevosGramos);
-    });
+  EditarComidaViewModel _resolveViewModel(BuildContext context) {
+    try {
+      return Provider.of<EditarComidaViewModel>(context, listen: true);
+    } on ProviderNotFoundException {
+      return _fallbackVm ??= EditarComidaViewModel(comida: widget.comida);
+    }
   }
 
-  Future<void> _editarGramosManual(int index) async {
-    final ing = _ingredientes[index];
-    final ctrl = TextEditingController(text: ing.gramos.round().toString());
-
+  Future<void> _editarGramosManual(
+    EditarComidaViewModel vm,
+    int index,
+    ComidaIngrediente ing,
+  ) async {
     final res = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.cardWhite,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Cantidad en gramos',
-          style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              ing.nombreConMarca,
-              style: AppTextStyles.body(
-                size: 13,
-                weight: FontWeight.w600,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: false,
-              ),
-              decoration: InputDecoration(
-                suffixText: 'gramos',
-                filled: true,
-                fillColor: AppColors.inputBg,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.forestDark,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              final val = double.tryParse(ctrl.text.trim());
-              Navigator.pop(ctx, val);
-            },
-            child: const Text('Aplicar'),
-          ),
-        ],
+      builder: (_) => _EditGramsDialog(
+        ingredientName: ing.nombreConMarca,
+        initialGrams: ing.gramos,
       ),
     );
 
     if (res != null && res > 0 && mounted) {
-      setState(() {
-        _ingredientes[index] = ing.conGramos(res);
-      });
+      vm.fijarGramos(index, res);
     }
   }
 
-  Future<void> _sumarDesdeAlacena() async {
+  Future<void> _sumarDesdeAlacena(EditarComidaViewModel vm) async {
     final seleccionado = await SelectorAlacenaModal.show(context);
     if (seleccionado != null && mounted) {
-      setState(() {
-        final nuevo = ComidaIngrediente.desdeAlacena(
-          alacena: seleccionado,
-          gramos: seleccionado.gramosPorcion,
-        );
-        _ingredientes.add(nuevo);
-      });
+      vm.agregarIngrediente(seleccionado, seleccionado.gramosPorcion);
     }
   }
 
-  void _guardar() {
-    final tituloLimpio = _tituloCtrl.text.trim();
-    final comidaActualizada = widget.comida.copyWith(
-      titulo: tituloLimpio.isEmpty ? widget.comida.titulo : tituloLimpio,
-      tipoComida: _tipoComida.toUpperCase(),
-      ingredientes: _ingredientes,
-    );
+  void _guardar(EditarComidaViewModel vm) {
+    vm.setTitulo(_tituloCtrl.text);
+    final comidaActualizada = vm.buildUpdatedComida();
+    final totalCalorias = vm.totalCalorias;
+    final totalIngredientes = vm.ingredientes.length;
 
     context.read<DiarioViewModel>().actualizarComida(comidaActualizada);
     Navigator.pop(context); // Cierra editor
@@ -188,7 +126,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
             borderRadius: BorderRadius.circular(12),
           ),
           content: Text(
-            'Comida modificada (${_ingredientes.length} ingredientes · $_totalCalorias kcal)',
+            'Comida modificada ($totalIngredientes ingredientes · $totalCalorias kcal)',
             style: AppTextStyles.body(
               size: 13,
               weight: FontWeight.w700,
@@ -201,6 +139,8 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final vm = _resolveViewModel(context);
+    final ingredientes = vm.ingredientes;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
 
@@ -225,15 +165,46 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          // Encabezado
-          Text(
-            'MODIFICAR COMIDA',
-            style: AppTextStyles.title(size: 16.5, weight: FontWeight.w800),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Ajustá ingredientes, porciones en gramos y macros.',
-            style: AppTextStyles.body(size: 12, color: AppColors.textMuted),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Modificar comida',
+                      style: AppTextStyles.title(
+                        size: 17,
+                        weight: FontWeight.w800,
+                        color: AppColors.forestDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ajustá ingredientes, porciones en gramos y macros.',
+                      style: AppTextStyles.body(
+                        size: 12,
+                        color: AppColors.textMutedAccessible,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              HealthScoreBadge(
+                healthScore: vm.healthScore,
+                isStale: vm.healthScoreDesactualizado,
+                isLoading: vm.healthScoreEvalState is HealthScoreEvaluating,
+                hasError: vm.healthScoreEvalState is HealthScoreEvalError,
+                onTap: () => HealthScoreDetailSheet.show(
+                  context,
+                  listenable: vm,
+                  readSnapshot: () => vm.healthScoreSnapshot,
+                  onEvaluate: vm.evaluarHealthScore,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
           // Selector horizontal de Tipo de Comida
@@ -241,17 +212,17 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
             height: 36,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: _tiposDisponibles.length,
+              itemCount: EditarComidaViewModel.availableMealTypes.length,
               separatorBuilder: (_, index) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final tipo = _tiposDisponibles[index];
-                final activo = tipo == _tipoComida;
+                final tipo = EditarComidaViewModel.availableMealTypes[index];
+                final activo = tipo == vm.tipoComida;
                 return ChoiceChip(
                   label: Text(tipo),
                   selected: activo,
                   showCheckmark: false,
                   onSelected: (val) {
-                    if (val) setState(() => _tipoComida = tipo);
+                    if (val) vm.setTipoComida(tipo);
                   },
                   selectedColor: AppColors.forestDark,
                   backgroundColor: AppColors.cardWhite,
@@ -272,7 +243,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
           const SizedBox(height: 12),
           // Lista de Ingredientes scrolleable
           Expanded(
-            child: _ingredientes.isEmpty
+            child: ingredientes.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -295,10 +266,10 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: _ingredientes.length,
+                    itemCount: ingredientes.length,
                     separatorBuilder: (_, index) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      final item = _ingredientes[index];
+                      final item = ingredientes[index];
                       return Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -340,17 +311,17 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // Stepper de gramos (- / +) y tap para ingresar número exacto
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 _StepperBtn(
                                   icon: Icons.remove,
-                                  onTap: () => _ajustarGramos(index, -10),
+                                  onTap: () => vm.ajustarGramos(index, -10),
                                 ),
                                 InkWell(
                                   borderRadius: BorderRadius.circular(8),
-                                  onTap: () => _editarGramosManual(index),
+                                  onTap: () =>
+                                      _editarGramosManual(vm, index, item),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -368,12 +339,11 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                                 ),
                                 _StepperBtn(
                                   icon: Icons.add,
-                                  onTap: () => _ajustarGramos(index, 10),
+                                  onTap: () => vm.ajustarGramos(index, 10),
                                 ),
                               ],
                             ),
                             const SizedBox(width: 4),
-                            // Botón borrar ingrediente
                             IconButton(
                               icon: const Icon(
                                 Icons.delete_outline_rounded,
@@ -389,9 +359,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                                   textoConfirmar: 'Quitar',
                                 );
                                 if (confirmar && mounted) {
-                                  setState(() {
-                                    _ingredientes.removeAt(index);
-                                  });
+                                  vm.eliminarIngrediente(index);
                                 }
                               },
                             ),
@@ -421,7 +389,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                 color: AppColors.forestDark,
               ),
             ),
-            onPressed: _sumarDesdeAlacena,
+            onPressed: () => _sumarDesdeAlacena(vm),
           ),
           const SizedBox(height: 12),
           // Totales en vivo (Kcal y Macros)
@@ -446,7 +414,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                       ),
                     ),
                     Text(
-                      '$_totalCalorias kcal',
+                      '${vm.totalCalorias} kcal',
                       style: AppTextStyles.number(
                         size: 18,
                         weight: FontWeight.w900,
@@ -456,7 +424,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                   ],
                 ),
                 Text(
-                  'P ${_totalProteinas.round()}g · C ${_totalCarbos.round()}g · G ${_totalGrasas.round()}g',
+                  'P ${vm.totalProteinas.round()}g · C ${vm.totalCarbos.round()}g · G ${vm.totalGrasas.round()}g',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -479,7 +447,7 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: _guardar,
+              onPressed: () => _guardar(vm),
               child: Text(
                 'Guardar cambios',
                 style: AppTextStyles.body(
@@ -492,6 +460,96 @@ class _EditarComidaSheetState extends State<EditarComidaSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EditGramsDialog extends StatefulWidget {
+  final String ingredientName;
+  final double initialGrams;
+
+  const _EditGramsDialog({
+    required this.ingredientName,
+    required this.initialGrams,
+  });
+
+  @override
+  State<_EditGramsDialog> createState() => _EditGramsDialogState();
+}
+
+class _EditGramsDialogState extends State<_EditGramsDialog> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialGrams.round().toString());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.cardWhite,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        'Cantidad en gramos',
+        style: AppTextStyles.title(size: 16, weight: FontWeight.w800),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.ingredientName,
+            style: AppTextStyles.body(
+              size: 13,
+              weight: FontWeight.w600,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: false),
+            decoration: InputDecoration(
+              suffixText: 'gramos',
+              filled: true,
+              fillColor: AppColors.inputBg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.forestDark,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          onPressed: () {
+            final val = double.tryParse(_ctrl.text.trim());
+            Navigator.pop(context, val);
+          },
+          child: const Text('Aplicar'),
+        ),
+      ],
     );
   }
 }

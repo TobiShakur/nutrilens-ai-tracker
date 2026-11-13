@@ -3,17 +3,24 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
 import '../../domain/entities/comida_item.dart';
+import 'health_score_badge.dart';
 
 class MealCardWidget extends StatelessWidget {
   final ComidaItem comida;
   final VoidCallback onDelete;
   final VoidCallback? onTap;
+  final VoidCallback? onScoreTap;
+  final bool isEvaluatingScore;
+  final bool hasScoreError;
 
   const MealCardWidget({
     super.key,
     required this.comida,
     required this.onDelete,
     this.onTap,
+    this.onScoreTap,
+    this.isEvaluatingScore = false,
+    this.hasScoreError = false,
   });
 
   @override
@@ -85,21 +92,37 @@ class MealCardWidget extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Título superior mayúsculas, kcal y lista de alimentos
+                  // Título superior, badge Health Score, kcal y lista de alimentos
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          comida.encabezadoTipo,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.title(
-                            size: 15.5,
-                            weight: FontWeight.w900,
-                            color: AppColors.forestDark,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                comida.encabezadoTipo,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.title(
+                                  size: 15.5,
+                                  weight: FontWeight.w900,
+                                  color: AppColors.forestDark,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            HealthScoreBadge(
+                              healthScore: comida.healthScore,
+                              isStale: comida.healthScoreDesactualizado,
+                              isLoading: isEvaluatingScore,
+                              hasError: hasScoreError,
+                              compact: true,
+                              onTap: onScoreTap,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
