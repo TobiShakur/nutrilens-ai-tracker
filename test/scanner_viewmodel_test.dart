@@ -794,9 +794,9 @@ void main() {
         addTearDown(vm.dispose);
 
         final sample = ImagenPlato.crear(
-          bytes: Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xD9]),
-          mimeType: 'image/jpeg',
-          nombreArchivo: 'sample_meal.jpg',
+          bytes: Uint8List.fromList([0x52, 0x49, 0x46, 0x46]),
+          mimeType: 'image/webp',
+          nombreArchivo: 'sample_meal.webp',
         );
 
         final first = vm.analizarImagen(

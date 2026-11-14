@@ -5,6 +5,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="NutriLens AI: Pantry-first meal & macro tracking with Gemini 2.5 Flash Vision, Clean Architecture, and MVVM + Provider.">
 
   <!-- iOS meta tags & icons -->
@@ -21,21 +22,413 @@
   <title>NutriLens AI — Mobile Engineering Showcase</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Tipografía Rubik & Plus Jakarta Sans -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Rubik:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      var perf = window.__portfolioPerf = window.__portfolioPerf || {
+        version: 1,
+        timeOrigin: performance.timeOrigin || Date.now(),
+        marks: {
+          htmlHeadMs: Number(performance.now().toFixed(1)),
+          htmlFirstPaintMs: null,
+          firstContentfulPaintMs: null,
+          loaderStartMs: null,
+          entrypointLoadedMs: null,
+          engineInitEndMs: null,
+          runAppStartMs: null,
+          runAppEndMs: null,
+          readyEventMs: null,
+          loaderRemovedMs: null
+        },
+        stages: {
+          htmlFirstPaintMs: null,
+          engineLoadMs: null,
+          dartBootMs: null,
+          assetsAndFontsMs: null,
+          totalReadyMs: null
+        },
+        readySource: null,
+        renderer: 'unknown',
+        resources: [],
+        network: null,
+        memory: null
+      };
+
+      function updatePaintMetrics(entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var entry = entries[i];
+          var t = Number(entry.startTime.toFixed(1));
+          if (entry.name === 'first-paint' && perf.marks.htmlFirstPaintMs === null) {
+            perf.marks.htmlFirstPaintMs = t;
+          }
+          if (entry.name === 'first-contentful-paint') {
+            perf.marks.firstContentfulPaintMs = t;
+            perf.stages.htmlFirstPaintMs = t;
+          }
+        }
+        if (perf.stages.htmlFirstPaintMs === null && perf.marks.htmlFirstPaintMs !== null) {
+          perf.stages.htmlFirstPaintMs = perf.marks.htmlFirstPaintMs;
+        }
+      }
+
+      if (typeof PerformanceObserver !== 'undefined') {
+        try {
+          var paintObserver = new PerformanceObserver(function (list) {
+            updatePaintMetrics(list.getEntries());
+          });
+          paintObserver.observe({ type: 'paint', buffered: true });
+        } catch (_) {}
+      }
+      updatePaintMetrics(performance.getEntriesByType('paint') || []);
+
+      function classifyResource(name) {
+        var clean = (name || '').split('?')[0].split('#')[0].toLowerCase();
+        if (clean.endsWith('.wasm')) return 'wasm';
+        if (clean.endsWith('.js') || clean.endsWith('.mjs')) return 'js';
+        if (
+          clean.endsWith('.png') ||
+          clean.endsWith('.jpg') ||
+          clean.endsWith('.jpeg') ||
+          clean.endsWith('.webp') ||
+          clean.endsWith('.svg') ||
+          clean.endsWith('.ico') ||
+          clean.endsWith('.gif')
+        ) {
+          return 'images';
+        }
+        if (
+          clean.endsWith('.ttf') ||
+          clean.endsWith('.otf') ||
+          clean.endsWith('.woff') ||
+          clean.endsWith('.woff2') ||
+          name.indexOf('fonts.googleapis.com') !== -1 ||
+          clean.endsWith('fontmanifest.json')
+        ) {
+          return 'fonts';
+        }
+        return 'other';
+      }
+
+      function detectRenderer(entries) {
+        for (var i = 0; i < entries.length; i++) {
+          var n = (entries[i].name || '').toLowerCase();
+          if (n.indexOf('skwasm') !== -1) return 'skwasm';
+          if (n.indexOf('canvaskit') !== -1) return 'canvaskit';
+        }
+        return perf.renderer || 'unknown';
+      }
+
+      function collectNetwork() {
+        var entries = performance.getEntriesByType('resource') || [];
+        perf.renderer = detectRenderer(entries);
+        var buckets = {
+          wasm: { transferBytes: 0, decodedBytes: 0, count: 0, cachedCount: 0, opaqueCount: 0 },
+          js: { transferBytes: 0, decodedBytes: 0, count: 0, cachedCount: 0, opaqueCount: 0 },
+          images: { transferBytes: 0, decodedBytes: 0, count: 0, cachedCount: 0, opaqueCount: 0 },
+          fonts: { transferBytes: 0, decodedBytes: 0, count: 0, cachedCount: 0, opaqueCount: 0 },
+          other: { transferBytes: 0, decodedBytes: 0, count: 0, cachedCount: 0, opaqueCount: 0 }
+        };
+        var totalTransfer = 0;
+        var totalDecoded = 0;
+        var cachedCount = 0;
+        var networkCount = 0;
+        var opaqueCount = 0;
+
+        var nav = (performance.getEntriesByType('navigation') || [])[0];
+        if (nav) {
+          var navTx = nav.transferSize || 0;
+          var navDec = nav.decodedBodySize || 0;
+          totalTransfer += navTx;
+          totalDecoded += navDec;
+          if (navTx === 0 && navDec > 0) {
+            cachedCount += 1;
+          } else if (navTx > 0) {
+            networkCount += 1;
+          }
+        }
+
+        var list = [];
+        for (var i = 0; i < entries.length; i++) {
+          var r = entries[i];
+          var type = classifyResource(r.name);
+          var tx = r.transferSize || 0;
+          var dec = r.decodedBodySize || 0;
+          var isOpaqueCrossOrigin = tx === 0 && dec === 0;
+          var isCacheHit = tx === 0 && dec > 0;
+          var b = buckets[type];
+          b.transferBytes += tx;
+          b.decodedBytes += dec;
+          b.count += 1;
+          if (isCacheHit) {
+            b.cachedCount += 1;
+            cachedCount += 1;
+          } else if (isOpaqueCrossOrigin) {
+            b.opaqueCount += 1;
+            opaqueCount += 1;
+          } else {
+            networkCount += 1;
+          }
+          totalTransfer += tx;
+          totalDecoded += dec;
+          list.push({
+            name: r.name,
+            type: type,
+            transferSizeKb: Number((tx / 1024).toFixed(2)),
+            decodedBodySizeKb: Number((dec / 1024).toFixed(2)),
+            durationMs: Number((r.duration || 0).toFixed(1)),
+            cached: isCacheHit,
+            opaque: isOpaqueCrossOrigin
+          });
+        }
+
+        function toKbBucket(b) {
+          return {
+            transferSizeKb: Number((b.transferBytes / 1024).toFixed(2)),
+            decodedBodySizeKb: Number((b.decodedBytes / 1024).toFixed(2)),
+            count: b.count,
+            cachedCount: b.cachedCount,
+            opaqueCount: b.opaqueCount
+          };
+        }
+
+        perf.resources = list;
+        perf.network = {
+          transferSizeKb: Number((totalTransfer / 1024).toFixed(2)),
+          decodedBodySizeKb: Number((totalDecoded / 1024).toFixed(2)),
+          totalResources: entries.length,
+          cachedCount: cachedCount,
+          networkCount: networkCount,
+          opaqueCount: opaqueCount,
+          allFromCache: networkCount === 0 && cachedCount > 0,
+          byType: {
+            wasm: toKbBucket(buckets.wasm),
+            js: toKbBucket(buckets.js),
+            images: toKbBucket(buckets.images),
+            fonts: toKbBucket(buckets.fonts),
+            other: toKbBucket(buckets.other)
+          }
+        };
+      }
+
+      function collectMemory() {
+        if (performance && performance.memory) {
+          perf.memory = {
+            jsHeapUsedMb: Number((performance.memory.usedJSHeapSize / 1048576).toFixed(2)),
+            jsHeapTotalMb: Number((performance.memory.totalJSHeapSize / 1048576).toFixed(2)),
+            jsHeapLimitMb: Number((performance.memory.jsHeapSizeLimit / 1048576).toFixed(2))
+          };
+        } else {
+          perf.memory = null;
+        }
+      }
+
+      perf.recomputeStages = function () {
+        updatePaintMetrics(performance.getEntriesByType('paint') || []);
+        var m = perf.marks;
+        if (m.loaderStartMs !== null && m.engineInitEndMs !== null) {
+          perf.stages.engineLoadMs = Number(Math.max(0, m.engineInitEndMs - m.loaderStartMs).toFixed(1));
+        }
+        if (m.runAppStartMs !== null && m.runAppEndMs !== null) {
+          perf.stages.dartBootMs = Number(Math.max(0, m.runAppEndMs - m.runAppStartMs).toFixed(1));
+        }
+        if (m.runAppEndMs !== null && m.readyEventMs !== null) {
+          perf.stages.assetsAndFontsMs = Number(Math.max(0, m.readyEventMs - m.runAppEndMs).toFixed(1));
+        }
+        if (m.readyEventMs !== null) {
+          perf.stages.totalReadyMs = Number(m.readyEventMs.toFixed(1));
+        }
+      };
+
+      perf.snapshot = function () {
+        perf.recomputeStages();
+        collectNetwork();
+        collectMemory();
+        return {
+          version: perf.version,
+          renderer: perf.renderer,
+          readySource: perf.readySource,
+          htmlFirstPaintMs: perf.stages.htmlFirstPaintMs,
+          engineLoadMs: perf.stages.engineLoadMs,
+          dartBootMs: perf.stages.dartBootMs,
+          assetsAndFontsMs: perf.stages.assetsAndFontsMs,
+          totalReadyMs: perf.stages.totalReadyMs,
+          transferSizeKb: perf.network.transferSizeKb,
+          decodedBodySizeKb: perf.network.decodedBodySizeKb,
+          byType: perf.network.byType,
+          cachedCount: perf.network.cachedCount,
+          networkCount: perf.network.networkCount,
+          opaqueCount: perf.network.opaqueCount,
+          allFromCache: perf.network.allFromCache,
+          jsHeapUsedMb: perf.memory ? perf.memory.jsHeapUsedMb : null,
+          jsHeapTotalMb: perf.memory ? perf.memory.jsHeapTotalMb : null,
+          marks: perf.marks
+        };
+      };
+
+      perf.snapshotJson = function () {
+        return JSON.stringify(perf.snapshot());
+      };
+
+      if (typeof PerformanceObserver !== 'undefined') {
+        try {
+          var resObserver = new PerformanceObserver(function () {
+            collectNetwork();
+          });
+          resObserver.observe({ type: 'resource', buffered: true });
+        } catch (_) {}
+      }
+    })();
+  </script>
 
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
       background-color: #07140E;
-      font-family: 'Rubik', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      color: #F4F6F8;
+      overflow: hidden;
+    }
+
+    #initial-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #07140E;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      opacity: 1;
+      transition:
+        opacity 550ms cubic-bezier(0.22, 1, 0.36, 1),
+        backdrop-filter 550ms cubic-bezier(0.22, 1, 0.36, 1),
+        -webkit-backdrop-filter 550ms cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 550ms cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: auto;
+    }
+
+    #initial-loader.is-leaving {
+      opacity: 0;
+      background-color: rgba(7, 20, 14, 0);
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+      pointer-events: none;
+    }
+
+    .loader-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      transform: translateY(0) scale(1);
+      opacity: 1;
+      transition:
+        transform 450ms cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 450ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #initial-loader.is-leaving .loader-content {
+      transform: translateY(-56px) scale(0.96);
+      opacity: 0;
+    }
+
+    .brand-wireframe-logo {
+      width: 56px;
+      height: 56px;
+      overflow: visible;
+    }
+
+    .brand-wireframe-path {
+      fill: none;
+      stroke: #A3E635;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 220;
+      stroke-dashoffset: 0;
+      animation: logo-stroke-pulse 2.2s ease-in-out infinite;
+    }
+
+    .loader-track {
+      position: relative;
+      width: 120px;
+      height: 2px;
+      border-radius: 999px;
+      background-color: #13281E;
+      overflow: hidden;
+    }
+
+    .loader-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 44px;
+      height: 100%;
+      border-radius: 999px;
+      background-color: #A3E635;
+      animation: loader-glide 1.35s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    }
+
+    @keyframes logo-stroke-pulse {
+      0%, 100% {
+        stroke: #84CC16;
+        opacity: 0.82;
+      }
+      50% {
+        stroke: #D2F07A;
+        opacity: 1;
+      }
+    }
+
+    @keyframes loader-glide {
+      0% {
+        transform: translateX(-48px);
+      }
+      100% {
+        transform: translateX(124px);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .brand-wireframe-path,
+      .loader-bar {
+        animation: none;
+      }
+      .loader-bar {
+        width: 120px;
+        opacity: 0.65;
+      }
+      #initial-loader,
+      .loader-content {
+        transition-duration: 120ms;
+      }
     }
   </style>
 </head>
 <body>
+  <div id="initial-loader" role="status" aria-label="Loading NutriLens AI">
+    <div class="loader-content">
+      <svg
+        class="brand-wireframe-logo"
+        viewBox="0 0 64 64"
+        aria-hidden="true"
+      >
+        <path class="brand-wireframe-path" d="M 8 20 V 13 A 5 5 0 0 1 13 8 H 20" />
+        <path class="brand-wireframe-path" d="M 44 8 H 51 A 5 5 0 0 1 56 13 V 20" />
+        <path class="brand-wireframe-path" d="M 56 44 V 51 A 5 5 0 0 1 51 56 H 44" />
+        <path class="brand-wireframe-path" d="M 20 56 H 13 A 5 5 0 0 1 8 51 V 44" />
+        <circle class="brand-wireframe-path" cx="32" cy="32" r="17" />
+        <path class="brand-wireframe-path" d="M 24 40 C 22 30 30 22 40 24 C 42 34 34 42 24 40 Z" />
+        <path class="brand-wireframe-path" d="M 22 42 L 35.5 28.5" />
+      </svg>
+      <div class="loader-track">
+        <div class="loader-bar"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Desregistrar service workers y vaciar caché para forzar actualización inmediata en móviles
     if ('serviceWorker' in navigator) {
@@ -53,6 +446,6 @@
       });
     }
   </script>
-  <script src="flutter_bootstrap.js?v=5" async></script>
+  <script src="flutter_bootstrap.js?v=r1" async></script>
 </body>
 </html>

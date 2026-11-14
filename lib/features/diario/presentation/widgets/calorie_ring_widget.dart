@@ -66,16 +66,18 @@ class CalorieRingWidget extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  CustomPaint(
-                    size: Size(ringSize, ringSize),
-                    painter: _MultiLayerRingPainter(
-                      ratioVerde: caloriasActuales <= 0
-                          ? 0.0
-                          : ratioVerde.clamp(0.0, 1.0),
-                      ratioNaranja: caloriasActuales <= metaCalorias
-                          ? 0.0
-                          : ratioNaranja,
-                      ratioRojo: ratioRojo,
+                  RepaintBoundary(
+                    child: CustomPaint(
+                      size: Size(ringSize, ringSize),
+                      painter: _MultiLayerRingPainter(
+                        ratioVerde: caloriasActuales <= 0
+                            ? 0.0
+                            : ratioVerde.clamp(0.0, 1.0),
+                        ratioNaranja: caloriasActuales <= metaCalorias
+                            ? 0.0
+                            : ratioNaranja,
+                        ratioRojo: ratioRojo,
+                      ),
                     ),
                   ),
                   Column(

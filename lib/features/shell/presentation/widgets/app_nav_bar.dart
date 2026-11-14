@@ -22,84 +22,86 @@ class AppNavBar extends StatelessWidget {
     final l10n = context.l10n;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return SafeArea(
-      top: false,
-      minimum: const EdgeInsets.only(bottom: 12),
-      child: Center(
-        heightFactor: 1.0,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 60,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardWhite,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: AppColors.borderLight,
-                        width: 1.2,
+    return RepaintBoundary(
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: Center(
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 60,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardWhite,
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: AppColors.borderLight,
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _NavTabItem(
-                            icon: Icons.cottage_rounded,
-                            label: l10n.navHome,
-                            isActive: selectedIndex == 0,
-                            reduceMotion: reduceMotion,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              onItemSelected(0);
-                            },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _NavTabItem(
+                              icon: Icons.cottage_rounded,
+                              label: l10n.navHome,
+                              isActive: selectedIndex == 0,
+                              reduceMotion: reduceMotion,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onItemSelected(0);
+                              },
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: _NavTabItem(
-                            icon: Icons.inventory_2_rounded,
-                            label: l10n.navPantry,
-                            isActive: selectedIndex == 1,
-                            reduceMotion: reduceMotion,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              onItemSelected(1);
-                            },
+                          Expanded(
+                            child: _NavTabItem(
+                              icon: Icons.inventory_2_rounded,
+                              label: l10n.navPantry,
+                              isActive: selectedIndex == 1,
+                              reduceMotion: reduceMotion,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onItemSelected(1);
+                              },
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: _NavTabItem(
-                            icon: Icons.person_rounded,
-                            label: l10n.navProfile,
-                            isActive: selectedIndex == 2,
-                            reduceMotion: reduceMotion,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              onItemSelected(2);
-                            },
+                          Expanded(
+                            child: _NavTabItem(
+                              icon: Icons.person_rounded,
+                              label: l10n.navProfile,
+                              isActive: selectedIndex == 2,
+                              reduceMotion: reduceMotion,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onItemSelected(2);
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                _ScannerFabButton(
-                  reduceMotion: reduceMotion,
-                  onTap: onCenterTap,
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  _ScannerFabButton(
+                    reduceMotion: reduceMotion,
+                    onTap: onCenterTap,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

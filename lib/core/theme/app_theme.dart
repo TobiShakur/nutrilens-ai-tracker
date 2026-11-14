@@ -2,15 +2,17 @@
 // Configura los tokens visuales, esquemas de color y estilo tipográfico de la app.
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
   AppTheme._();
 
+  static const String _fontFamily = 'Plus Jakarta Sans';
+
   static ThemeData get light {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: _fontFamily,
       scaffoldBackgroundColor: AppColors.scaffoldBg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.forestDark,
@@ -20,7 +22,8 @@ class AppTheme {
       ),
     );
     return base.copyWith(
-      textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme),
+      textTheme: base.textTheme.apply(fontFamily: _fontFamily),
+      primaryTextTheme: base.primaryTextTheme.apply(fontFamily: _fontFamily),
     );
   }
 }

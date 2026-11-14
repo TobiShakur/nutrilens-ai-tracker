@@ -26,7 +26,7 @@ class ScannerScreen extends StatefulWidget {
 
 class _ScannerScreenState extends State<ScannerScreen>
     with WidgetsBindingObserver {
-  static const String _sampleMealAssetPath = 'assets/images/sample_meal.jpg';
+  static const String _sampleMealAssetPath = 'assets/images/sample_meal.webp';
 
   late final CameraPreviewController _cameraController;
   late final bool _ownsCameraController;
@@ -100,8 +100,8 @@ class _ScannerScreenState extends State<ScannerScreen>
       );
       final imagen = ImagenPlato.crear(
         bytes: bytes,
-        mimeType: 'image/jpeg',
-        nombreArchivo: 'sample_meal.jpg',
+        mimeType: 'image/webp',
+        nombreArchivo: 'sample_meal.webp',
       );
       final pantryItems = context.read<AlacenaViewModel>().todosLosIngredientes;
       final languageCode = context.activeLanguageCode;

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// Tipografía estandarizada de la app:
@@ -8,6 +7,9 @@ import 'app_colors.dart';
 class AppTextStyles {
   AppTextStyles._();
 
+  static const String _sansFamily = 'Plus Jakarta Sans';
+  static const String _numberFamily = 'Rubik';
+
   /// Números y métricas nutricionales (anchitos / display)
   static TextStyle number({
     double size = 16,
@@ -15,7 +17,8 @@ class AppTextStyles {
     Color color = AppColors.forestDark,
     double? letterSpacing,
   }) {
-    return GoogleFonts.rubik(
+    return TextStyle(
+      fontFamily: _numberFamily,
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -30,7 +33,8 @@ class AppTextStyles {
     Color color = AppColors.forestDark,
     double? letterSpacing,
   }) {
-    return GoogleFonts.plusJakartaSans(
+    return TextStyle(
+      fontFamily: _sansFamily,
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -45,7 +49,8 @@ class AppTextStyles {
     Color color = AppColors.forestDark,
     double? letterSpacing,
   }) {
-    return GoogleFonts.plusJakartaSans(
+    return TextStyle(
+      fontFamily: _sansFamily,
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -61,7 +66,8 @@ class AppTextStyles {
     double? letterSpacing,
     double? height,
   }) {
-    return GoogleFonts.plusJakartaSans(
+    return TextStyle(
+      fontFamily: _sansFamily,
       fontSize: size,
       fontWeight: weight,
       color: color,

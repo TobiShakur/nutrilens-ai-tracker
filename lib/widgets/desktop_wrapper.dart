@@ -105,10 +105,12 @@ class DesktopWrapper extends StatelessWidget {
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.center,
-                      child: _PhoneBezelFrame(
-                        phoneWidth: _logicalPhoneWidth,
-                        phoneHeight: logicalPhoneHeight,
-                        child: child,
+                      child: RepaintBoundary(
+                        child: _PhoneBezelFrame(
+                          phoneWidth: _logicalPhoneWidth,
+                          phoneHeight: logicalPhoneHeight,
+                          child: child,
+                        ),
                       ),
                     ),
                   ),

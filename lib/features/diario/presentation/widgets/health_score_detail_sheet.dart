@@ -389,45 +389,47 @@ class _ScoredBody extends StatelessWidget {
               SizedBox(
                 width: 60,
                 height: 60,
-                child: CustomPaint(
-                  painter: _ScoreRingPainter(
-                    progress: (score / 100).clamp(0.0, 1.0),
-                    color: _ringColor(score),
-                    trackColor: AppColors.borderLight,
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$score',
-                          style:
-                              AppTextStyles.number(
-                                size: 20,
-                                weight: FontWeight.w900,
-                                color: AppColors.textDark,
-                              ).copyWith(
-                                height: 1.0,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                        ),
-                        Text(
-                          '/100',
-                          style:
-                              AppTextStyles.number(
-                                size: 10.5,
-                                weight: FontWeight.w700,
-                                color: AppColors.textMutedAccessible,
-                              ).copyWith(
-                                height: 1.1,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                        ),
-                      ],
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _ScoreRingPainter(
+                      progress: (score / 100).clamp(0.0, 1.0),
+                      color: _ringColor(score),
+                      trackColor: AppColors.borderLight,
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '$score',
+                            style:
+                                AppTextStyles.number(
+                                  size: 20,
+                                  weight: FontWeight.w900,
+                                  color: AppColors.textDark,
+                                ).copyWith(
+                                  height: 1.0,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                          ),
+                          Text(
+                            '/100',
+                            style:
+                                AppTextStyles.number(
+                                  size: 10.5,
+                                  weight: FontWeight.w700,
+                                  color: AppColors.textMutedAccessible,
+                                ).copyWith(
+                                  height: 1.1,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

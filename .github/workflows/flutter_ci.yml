@@ -35,4 +35,4 @@ jobs:
         run: flutter test --coverage
 
       - name: Build Web Release (Smoke Test)
-        run: flutter build web --release --dart-define=GEMINI_PROXY_URL=""
+        run: flutter build web --release --wasm --dart-define=GEMINI_PROXY_URL=""

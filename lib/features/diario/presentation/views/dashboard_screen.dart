@@ -30,7 +30,9 @@ class DashboardScreen extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: _HeroCard(dia: dia, vm: vm),
+          child: RepaintBoundary(
+            child: _HeroCard(dia: dia, vm: vm),
+          ),
         ),
         SliverToBoxAdapter(
           child: HealthScoreBanner(

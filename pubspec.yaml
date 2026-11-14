@@ -38,11 +38,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
-  google_fonts: ^8.2.1
   image_picker: ^1.2.4
   http: ^1.6.0
   camera: ^0.12.2
   shared_preferences: ^2.5.2
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +68,35 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/sample_meal.jpg
+    - assets/images/sample_meal.webp
+
+  fonts:
+    - family: Plus Jakarta Sans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+    - family: Rubik
+      fonts:
+        - asset: assets/fonts/Rubik-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Rubik-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Rubik-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Rubik-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Rubik-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Rubik-Black.ttf
+          weight: 900
 
   # To add assets to your application, add an assets section, like this:
   # assets:

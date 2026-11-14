@@ -457,7 +457,7 @@ void main() {
 
       // Verify exact asset bytes were loaded and passed to repository.
       final expectedData = await rootBundle.load(
-        'assets/images/sample_meal.jpg',
+        'assets/images/sample_meal.webp',
       );
       final expectedBytes = expectedData.buffer.asUint8List(
         expectedData.offsetInBytes,
@@ -465,7 +465,7 @@ void main() {
       );
       expect(repo.lastImage, isNotNull);
       expect(repo.lastImage!.bytes, expectedBytes);
-      expect(repo.lastImage!.mimeType, 'image/jpeg');
+      expect(repo.lastImage!.mimeType, 'image/webp');
       expect(repo.lastLanguageCode, 'es');
 
       // Complete AI response at standard viewport -> opens ReviewComidaSheet.
